@@ -12,19 +12,30 @@ PMDCollab SpriteCollab의 8방향 스프라이트 시트 사용.
 - SwiftUI + AppKit 하이브리드 (투명 윈도우는 AppKit, 설정/선택기 UI는 SwiftUI)
 - 메뉴바: MenuBarExtra + .window 스타일 (커스텀 SwiftUI 드롭다운)
 - Dock 숨김 (LSUIElement = true), 메뉴바 전용 앱
-- 게임 루프: DispatchSourceTimer
-- 스프라이트는 앱 번들에 포함 (~15MB)
+- 게임 루프: DispatchSourceTimer (메인 큐)
+- @Observable (Observation 프레임워크) 사용 — ObservableObject 사용하지 않음
+- 스프라이트는 앱 번들에 포함 (~20-30MB)
 - portrait 이미지: 포켓몬 선택기에서 초상화 표시용 (PMDCollab portrait/{ID}/Normal.png)
+
+### PetManager (중앙 관리자 싱글턴)
+```
+PetManager.shared (@Observable)
+  ├─ spriteAnimator    (@Observable) — 프레임 제공, 애니메이션 전환
+  ├─ stateMachine      (@Observable) — 6개 상태 전환, 위치/방향
+  ├─ gameLoop          — DispatchSourceTimer, 위치 업데이트
+  ├─ settingsManager   (@Observable) — UserDefaults 저장/로드
+  └─ pokemonDataManager — 649종 포켓몬 목록
+```
+SwiftUI/AppKit 어디서든 PetManager.shared로 모든 컴포넌트 접근.
 
 ## 프로젝트 구조
 ```
 poketmon/
   App/            — 앱 진입점 (AppDelegate)
   Models/         — AnimDataParser, SpriteSheet, SpriteAnimator, PokemonDataManager
-  Views/          — SwiftUI 뷰 (선택기, 설정 패널)
-  ViewModels/     — ObservableObject VM
-  Services/       — SettingsManager 등
-  Core/           — 상태 머신, 이동 로직
+  Views/          — SwiftUI 뷰 (선택기, 설정 패널, 메뉴바 드롭다운)
+  Services/       — SettingsManager
+  Core/           — PetManager, PetStateMachine, GameLoop
   Resources/      — Sprites/{ID}/, pokemon_data.json
 ```
 
@@ -35,7 +46,7 @@ poketmon/
 - 8방향 (Row 0~7: Down, DownRight, Right, UpRight, Up, UpLeft, Left, DownLeft)
 
 ## 결정 사항
-- 화면 가장자리에서 반사 기능 제거
+- 화면 가장자리 반사 옵션 토글 제거 (항상 반사 — 포켓몬은 가장자리에서 반대 방향으로 전환)
 - 다른 윈도우 위에서만 이동 기능 제거 (Accessibility API 권한 부담)
 - Run 상태는 별도 모션 없이 Walk 애니메이션 속도 증가로 처리
 

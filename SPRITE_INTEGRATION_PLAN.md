@@ -189,7 +189,7 @@ func directionIndex(dx: CGFloat, dy: CGFloat) -> Int {
 ### 다운로드 스크립트
 파일: `download_sprites.sh`
 
-다운로드 대상 (포켓몬당 7파일):
+다운로드 대상 (포켓몬당 13파일):
 1. `AnimData.xml` - 메타데이터 (필수)
 2. `Walk-Anim.png` - 걷기 스프라이트 (필수)
 3. `Walk-Shadow.png` - 걷기 그림자 (선택)
@@ -197,6 +197,12 @@ func directionIndex(dx: CGFloat, dy: CGFloat) -> Int {
 5. `Idle-Shadow.png` - 대기 그림자 (선택)
 6. `Sleep-Anim.png` - 수면 스프라이트 (필수)
 7. `Sleep-Shadow.png` - 수면 그림자 (선택)
+8. `Eat-Anim.png` - 먹기 반응 (선택, 일부 포켓몬 미보유)
+9. `Eat-Shadow.png` - 먹기 그림자 (선택)
+10. `Hop-Anim.png` - 점프 반응 (선택, 일부 포켓몬 미보유)
+11. `Hop-Shadow.png` - 점프 그림자 (선택)
+12. `Hurt-Anim.png` - 피격 반응 (선택, 일부 포켓몬 미보유)
+13. `Hurt-Shadow.png` - 피격 그림자 (선택)
 
 ### 다운로드 URL 패턴
 ```
@@ -204,8 +210,8 @@ https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/{ID:04d}/
 ```
 
 ### 예상 용량
-- 포켓몬당 약 10-30KB (Walk + Idle + Sleep + AnimData)
-- 633종 × ~20KB = 약 **12-15MB** 총 용량
+- 포켓몬당 약 20-50KB (Walk + Idle + Sleep + Eat + Hop + Hurt + Shadow + AnimData)
+- 633종 × ~35KB = 약 **20-30MB** 총 용량
 
 ---
 
@@ -217,9 +223,12 @@ Resources/
   sprites/
     0001/
       AnimData.xml
-      Walk-Anim.png
-      Idle-Anim.png
-      Sleep-Anim.png
+      Walk-Anim.png, Walk-Shadow.png
+      Idle-Anim.png, Idle-Shadow.png
+      Sleep-Anim.png, Sleep-Shadow.png
+      Eat-Anim.png, Eat-Shadow.png     ← 선택 (일부 포켓몬 미보유)
+      Hop-Anim.png, Hop-Shadow.png     ← 선택
+      Hurt-Anim.png, Hurt-Shadow.png   ← 선택
     0025/
       ...
   pokemon_data.json
