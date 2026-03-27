@@ -6,7 +6,10 @@
       "Bash(curl -sI \"https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/0025/Normal.png\")",
       "Bash(curl -sL \"https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/0025/\")",
       "Bash(curl -sI https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/0025/Normal.png -w %{http_code} -o /dev/null)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(plutil -p /Users/hyungjunpark/dev/poketmon/poketmon/Info.plist)",
+      "Bash(ls /Users/hyungjunpark/dev/poketmon/poketmon/*.plist)",
+      "Bash(ls /Users/hyungjunpark/dev/poketmon/*.plist)"
     ]
   }
 }

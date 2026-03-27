@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>피카츄 스프라이트 데모</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .menubar {
+    height: 28px;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.85);
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+  }
+  .menubar-left { display: flex; gap: 16px; font-weight: 500; }
+  .menubar-right { display: flex; gap: 12px; }
+
+  .pokemon {
+    position: absolute;
+    cursor: grab;
+    user-select: none;
+    z-index: 50;
+  }
+  .pokemon.dragging { cursor: grabbing; }
+
+  .sprite-container {
+    position: relative;
+  }
+
+  .sprite-anim {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background-repeat: no-repeat;
+    transform-origin: center bottom;
+  }
+
+  .sprite-shadow {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background-repeat: no-repeat;
+    position: absolute;
+    opacity: 0.5;
+  }
+
+  .dir-label {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    background: rgba(0,0,0,0.6);
+    padding: 1px 8px;
+    border-radius: 10px;
+    color: #4ade80;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .panel {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 16px 24px;
+    color: #fff;
+    z-index: 200;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .panel-section { display: flex; flex-direction: column; gap: 4px; }
+  .panel-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+  .panel-value { font-size: 14px; font-weight: 600; }
+
+  .state-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .state-idle { background: rgba(74,222,128,0.2); color: #4ade80; }
+  .state-walk { background: rgba(96,165,250,0.2); color: #60a5fa; }
+  .state-run { background: rgba(245,158,11,0.2); color: #f59e0b; }
+  .state-sleep { background: rgba(167,139,250,0.2); color: #a78bfa; }
+  .state-reaction { background: rgba(244,114,182,0.2); color: #f472b6; }
+  .state-dragged { background: rgba(148,163,184,0.2); color: #94a3b8; }
+
+  .timer-bar { width: 100px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+  .timer-fill { height: 100%; background: #60a5fa; border-radius: 2px; transition: width 0.1s linear; }
+
+  .controls {
+    position: fixed;
+    top: 44px;
+    right: 16px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 12px 16px;
+    z-index: 200;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ctrl-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.06);
+    color: #ccc;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .ctrl-btn.active { background: rgba(59,130,246,0.3); border-color: rgba(59,130,246,0.5); color: #60a5fa; }
+  .ctrl-title { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+
+  .ctrl-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .ctrl-slider-label { font-size: 11px; color: #aaa; width: 36px; }
+  .ctrl-slider {
+    width: 80px;
+    -webkit-appearance: none;
+    height: 3px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    outline: none;
+  }
+  .ctrl-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #60a5fa;
+    cursor: pointer;
+  }
+  .ctrl-slider-val { font-size: 11px; color: #60a5fa; width: 30px; text-align: right; }
+
+  .hints {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    z-index: 200;
+  }
+  .hint {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    background: rgba(0,0,0,0.3);
+    padding: 4px 12px;
+    border-radius: 10px;
+  }
+
+  .edge-glow {
+    position: fixed;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .edge-glow.active { opacity: 1; }
+  .edge-left { top: 0; left: 0; width: 4px; height: 100%; background: linear-gradient(to right, rgba(96,165,250,0.4), transparent); }
+  .edge-right { top: 0; right: 0; width: 4px; height: 100%; background: linear-gradient(to left, rgba(96,165,250,0.4), transparent); }
+  .edge-top { top: 28px; left: 0; width: 100%; height: 4px; background: linear-gradient(to bottom, rgba(96,165,250,0.4), transparent); }
+  .edge-bottom { bottom: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(to top, rgba(96,165,250,0.4), transparent); }
+</style>
+</head>
+<body>
+
+<div class="menubar">
+  <div class="menubar-left"><span>Finder</span> <span>File</span> <span>Edit</span> <span>View</span></div>
+  <div class="menubar-right"><span>Wi-Fi</span> <span>100%</span> <span>3:42 PM</span></div>
+</div>
+
+<div class="pokemon" id="pokemon">
+  <div class="dir-label" id="dir-label">Idle</div>
+  <div class="sprite-container" id="sprite-container">
+    <div class="sprite-shadow" id="sprite-shadow"></div>
+    <div class="sprite-anim" id="sprite-anim"></div>
+  </div>
+</div>
+
+<div class="edge-glow edge-left" id="edge-left"></div>
+<div class="edge-glow edge-right" id="edge-right"></div>
+<div class="edge-glow edge-top" id="edge-top"></div>
+<div class="edge-glow edge-bottom" id="edge-bottom"></div>
+
+<div class="controls">
+  <div class="ctrl-title">State</div>
+  <div class="ctrl-btn" onclick="forceState('idle')">Idle</div>
+  <div class="ctrl-btn" onclick="forceState('walk')">Walk</div>
+  <div class="ctrl-btn" onclick="forceState('run')">Run</div>
+  <div class="ctrl-btn" onclick="forceState('sleep')">Sleep</div>
+  <div class="ctrl-title" style="margin-top:8px;">Size</div>
+  <div class="ctrl-slider-row">
+    <span class="ctrl-slider-label">Scale</span>
+    <input type="range" class="ctrl-slider" min="1" max="6" value="3" id="scale-slider" oninput="updateScale()">
+    <span class="ctrl-slider-val" id="scale-val">3x</span>
+  </div>
+  <div class="ctrl-title" style="margin-top:8px;">Options</div>
+  <div class="ctrl-btn" id="auto-btn" onclick="toggleAuto()">Auto: ON</div>
+  <div class="ctrl-btn" id="shadow-btn" onclick="toggleShadow()">Shadow: ON</div>
+</div>
+
+<div class="hints">
+  <div class="hint">Click: Reaction</div>
+  <div class="hint">Drag: Move</div>
+</div>
+
+<div class="panel">
+  <div class="panel-section">
+    <div class="panel-label">State</div>
+    <div class="panel-value"><span class="state-badge state-idle" id="state-badge">Idle</span></div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-label">Direction</div>
+    <div class="panel-value" id="panel-dir">-</div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-label">Frame</div>
+    <div class="panel-value" id="panel-frame">0/0</div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-label">Animation</div>
+    <div class="panel-value" id="panel-anim">Idle</div>
+  </div>
+  <div class="panel-section">
+    <div class="panel-label">Next</div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+  </div>
+</div>
+
+<script>
+const SPRITE_BASE = 'poketmon/Resources/Sprites/0025/';
+
+// AnimData from XML
+const ANIMS = {
+  Walk:  { w: 32, h: 40, durations: [8, 10, 8, 10],       file: 'Walk-Anim.png',  shadow: 'Walk-Shadow.png' },
+  Idle:  { w: 40, h: 56, durations: [40, 2, 3, 3, 3, 2],   file: 'Idle-Anim.png',  shadow: null },
+  Sleep: { w: 32, h: 40, durations: [30, 35],               file: 'Sleep-Anim.png', shadow: null },
+};
+
+const DIRS = [
+  { name: 'Down',      arrow: '↓',  dx: 0,    dy: 1    },
+  { name: 'DownRight', arrow: '↘',  dx: 0.7,  dy: 0.7  },
+  { name: 'Right',     arrow: '→',  dx: 1,    dy: 0    },
+  { name: 'UpRight',   arrow: '↗',  dx: 0.7,  dy: -0.7 },
+  { name: 'Up',        arrow: '↑',  dx: 0,    dy: -1   },
+  { name: 'UpLeft',    arrow: '↖',  dx: -0.7, dy: -0.7 },
+  { name: 'Left',      arrow: '←',  dx: -1,   dy: 0    },
+  { name: 'DownLeft',  arrow: '↙',  dx: -0.7, dy: 0.7  },
+];
+
+const pet = document.getElementById('pokemon');
+const spriteAnim = document.getElementById('sprite-anim');
+const spriteShadow = document.getElementById('sprite-shadow');
+const dirLabel = document.getElementById('dir-label');
+
+let x = window.innerWidth / 2 - 32;
+let y = window.innerHeight / 2 - 32;
+let state = 'idle';
+let dirIdx = 0;
+let speed = 0;
+let stateTimer = 0;
+let stateDuration = 0;
+let autoMode = true;
+let showShadow = true;
+let idleCounter = 0;
+let isDragging = false;
+let dragOffX = 0, dragOffY = 0;
+let scale = 3;
+
+// Animation state
+let currentAnim = 'Idle';
+let frameIdx = 0;
+let frameTick = 0;
+
+const WALK_SPEED = 1.5;
+const RUN_SPEED = 3;
+const MARGIN = 20;
+const MARGIN_TOP = 48;
+
+function setSprite(animName, dirIndex) {
+  const anim = ANIMS[animName];
+  if (!anim) return;
+  currentAnim = animName;
+
+  const fw = anim.w * scale;
+  const fh = anim.h * scale;
+  const numFrames = anim.durations.length;
+  const sheetW = anim.w * numFrames;
+
+  // For Sleep, only 1 row (no directions)
+  let row = (animName === 'Sleep') ? 0 : dirIndex;
+
+  spriteAnim.style.width = fw + 'px';
+  spriteAnim.style.height = fh + 'px';
+  spriteAnim.style.backgroundImage = `url('${SPRITE_BASE}${anim.file}')`;
+  spriteAnim.style.backgroundSize = `${sheetW * scale}px auto`;
+
+  // Shadow
+  if (anim.shadow && showShadow) {
+    spriteShadow.style.display = 'block';
+    spriteShadow.style.width = fw + 'px';
+    spriteShadow.style.height = fh + 'px';
+    spriteShadow.style.backgroundImage = `url('${SPRITE_BASE}${anim.shadow}')`;
+    spriteShadow.style.backgroundSize = `${sheetW * scale}px auto`;
+    spriteShadow.style.left = '0';
+    spriteShadow.style.top = '0';
+  } else {
+    spriteShadow.style.display = 'none';
+  }
+
+  updateFrame(row);
+}
+
+function updateFrame(row) {
+  const anim = ANIMS[currentAnim];
+  if (!anim) return;
+
+  const fw = anim.w * scale;
+  const fh = anim.h * scale;
+  const bgX = -(frameIdx * fw);
+  const bgY = -(row * fh);
+
+  spriteAnim.style.backgroundPosition = `${bgX}px ${bgY}px`;
+
+  if (anim.shadow && showShadow) {
+    spriteShadow.style.backgroundPosition = `${bgX}px ${bgY}px`;
+  }
+}
+
+function advanceFrame() {
+  const anim = ANIMS[currentAnim];
+  if (!anim) return;
+
+  frameTick++;
+  const dur = anim.durations[frameIdx];
+  const speedMul = (state === 'run') ? 0.67 : 1;
+
+  if (frameTick >= dur * speedMul) {
+    frameTick = 0;
+    frameIdx = (frameIdx + 1) % anim.durations.length;
+    const row = (currentAnim === 'Sleep') ? 0 : dirIdx;
+    updateFrame(row);
+  }
+}
+
+function setState(newState) {
+  state = newState;
+  stateTimer = 0;
+  frameIdx = 0;
+  frameTick = 0;
+
+  const badge = document.getElementById('state-badge');
+  badge.className = 'state-badge state-' + state;
+  badge.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+
+  document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+  const btns = document.querySelectorAll('.ctrl-btn');
+  const stateMap = { idle: 0, walk: 1, run: 2, sleep: 3 };
+  if (stateMap[state] !== undefined) btns[stateMap[state]].classList.add('active');
+
+  switch(state) {
+    case 'idle':
+      speed = 0;
+      stateDuration = 2 + Math.random() * 3;
+      idleCounter = 0;
+      setSprite('Idle', dirIdx);
+      dirLabel.textContent = 'Idle';
+      dirLabel.style.color = '#4ade80';
+      break;
+    case 'walk':
+      speed = WALK_SPEED;
+      dirIdx = Math.floor(Math.random() * 8);
+      stateDuration = 3 + Math.random() * 7;
+      setSprite('Walk', dirIdx);
+      dirLabel.style.color = '#60a5fa';
+      break;
+    case 'run':
+      speed = RUN_SPEED;
+      dirIdx = Math.floor(Math.random() * 8);
+      stateDuration = 10;
+      setSprite('Walk', dirIdx);
+      dirLabel.style.color = '#f59e0b';
+      break;
+    case 'sleep':
+      speed = 0;
+      stateDuration = 999;
+      setSprite('Sleep', 0);
+      dirLabel.textContent = 'Sleep';
+      dirLabel.style.color = '#a78bfa';
+      break;
+    case 'reaction':
+      speed = 0;
+      stateDuration = 0.6;
+      dirLabel.textContent = 'Reaction!';
+      dirLabel.style.color = '#f472b6';
+      break;
+    case 'dragged':
+      speed = 0;
+      stateDuration = 999;
+      dirLabel.textContent = 'Dragged';
+      dirLabel.style.color = '#94a3b8';
+      break;
+  }
+}
+
+function reflect(edge) {
+  document.getElementById('edge-' + edge).classList.add('active');
+  setTimeout(() => document.getElementById('edge-' + edge).classList.remove('active'), 300);
+
+  switch(edge) {
+    case 'left': case 'right':
+      dirIdx = [0, 7, 6, 5, 4, 3, 2, 1][dirIdx];
+      break;
+    case 'top': case 'bottom':
+      dirIdx = [4, 3, 2, 1, 0, 7, 6, 5][dirIdx];
+      break;
+  }
+  setSprite('Walk', dirIdx);
+}
+
+let animCounter = 0;
+
+function update(dt) {
+  if (state === 'dragged') {
+    updatePanel();
+    return;
+  }
+
+  stateTimer += dt;
+
+  // Frame animation (tick-based at ~60fps)
+  animCounter += dt;
+  while (animCounter >= 1/60) {
+    animCounter -= 1/60;
+    advanceFrame();
+  }
+
+  // Reaction bounce
+  if (state === 'reaction') {
+    const t = stateTimer / stateDuration;
+    const bounce = Math.sin(t * Math.PI) * 20;
+    spriteAnim.style.transform = `translateY(${-bounce}px)`;
+    if (stateTimer >= stateDuration) {
+      spriteAnim.style.transform = '';
+      setState('idle');
+      return;
+    }
+    updatePanel();
+    return;
+  }
+
+  // Auto transitions
+  if (autoMode) {
+    if (state === 'idle' && stateTimer >= stateDuration) {
+      idleCounter += stateDuration;
+      if (idleCounter >= 15) {
+        setState('sleep');
+      } else {
+        setState('walk');
+      }
+      return;
+    }
+    if (state === 'walk' && stateTimer >= stateDuration) {
+      setState('idle');
+      return;
+    }
+    if (state === 'run' && stateTimer >= stateDuration) {
+      setState('walk');
+      return;
+    }
+  }
+
+  // Movement
+  if (speed > 0) {
+    const dir = DIRS[dirIdx];
+    x += dir.dx * speed;
+    y += dir.dy * speed;
+
+    const anim = ANIMS[currentAnim];
+    const fw = anim.w * scale;
+    const fh = anim.h * scale;
+    const maxX = window.innerWidth - fw - MARGIN;
+    const maxY = window.innerHeight - fh - MARGIN - 60;
+
+    if (x <= MARGIN) { x = MARGIN; reflect('left'); }
+    if (x >= maxX) { x = maxX; reflect('right'); }
+    if (y <= MARGIN_TOP) { y = MARGIN_TOP; reflect('top'); }
+    if (y >= maxY) { y = maxY; reflect('bottom'); }
+
+    dirLabel.textContent = (state === 'run' ? 'Run ' : 'Walk ') + DIRS[dirIdx].name + ' ' + DIRS[dirIdx].arrow;
+  }
+
+  pet.style.left = x + 'px';
+  pet.style.top = y + 'px';
+
+  updatePanel();
+}
+
+function updatePanel() {
+  const anim = ANIMS[currentAnim];
+  document.getElementById('panel-dir').textContent = speed > 0 ? DIRS[dirIdx].name + ' ' + DIRS[dirIdx].arrow : '-';
+  document.getElementById('panel-frame').textContent = frameIdx + '/' + (anim ? anim.durations.length : 0);
+  document.getElementById('panel-anim').textContent = currentAnim;
+
+  const progress = stateDuration < 999 ? Math.min(stateTimer / stateDuration * 100, 100) : 0;
+  document.getElementById('timer-fill').style.width = progress + '%';
+}
+
+// Game loop
+let lastTime = performance.now();
+function gameLoop(now) {
+  const dt = (now - lastTime) / 1000;
+  lastTime = now;
+  update(dt);
+  requestAnimationFrame(gameLoop);
+}
+
+// Mouse
+pet.addEventListener('mousedown', (e) => {
+  if (e.button === 0) {
+    if (state === 'sleep') { setState('idle'); return; }
+    isDragging = true;
+    dragOffX = e.clientX - x;
+    dragOffY = e.clientY - y;
+    pet.classList.add('dragging');
+    setState('dragged');
+  }
+});
+document.addEventListener('mousemove', (e) => {
+  if (isDragging) {
+    x = e.clientX - dragOffX;
+    y = e.clientY - dragOffY;
+    pet.style.left = x + 'px';
+    pet.style.top = y + 'px';
+    updatePanel();
+  }
+});
+document.addEventListener('mouseup', () => {
+  if (isDragging) {
+    isDragging = false;
+    pet.classList.remove('dragging');
+    setState('idle');
+  }
+});
+pet.addEventListener('click', () => {
+  if (!isDragging && state !== 'dragged' && state !== 'sleep') {
+    setState('reaction');
+  }
+});
+
+function forceState(s) { idleCounter = 0; setState(s); }
+function toggleAuto() {
+  autoMode = !autoMode;
+  document.getElementById('auto-btn').textContent = 'Auto: ' + (autoMode ? 'ON' : 'OFF');
+  document.getElementById('auto-btn').classList.toggle('active', autoMode);
+}
+function toggleShadow() {
+  showShadow = !showShadow;
+  document.getElementById('shadow-btn').textContent = 'Shadow: ' + (showShadow ? 'ON' : 'OFF');
+  document.getElementById('shadow-btn').classList.toggle('active', showShadow);
+  setSprite(currentAnim, dirIdx);
+}
+function updateScale() {
+  scale = parseInt(document.getElementById('scale-slider').value);
+  document.getElementById('scale-val').textContent = scale + 'x';
+  setSprite(currentAnim, dirIdx);
+}
+
+// Init
+pet.style.left = x + 'px';
+pet.style.top = y + 'px';
+document.getElementById('auto-btn').classList.add('active');
+document.getElementById('shadow-btn').classList.add('active');
+setState('idle');
+requestAnimationFrame(gameLoop);
+</script>
+
+</body>
+</html>

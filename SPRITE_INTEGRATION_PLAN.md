@@ -76,19 +76,23 @@ Row 7:  DownLeft  DownLeft  DownLeft  DownLeft     ← 왼쪽 아래
 
 ### AnimData.xml 파싱 예시 (피카츄)
 ```xml
-<Anims>
-  <Anim>
-    <Name>Walk</Name>
-    <FrameWidth>32</FrameWidth>
-    <FrameHeight>40</FrameHeight>
-    <Durations>
-      <Duration>8</Duration>   <!-- 1/60초 단위 = ~133ms -->
-      <Duration>10</Duration>  <!-- ~167ms -->
-      <Duration>8</Duration>
-      <Duration>10</Duration>
-    </Durations>
-  </Anim>
-</Anims>
+<AnimData>
+  <ShadowSize>1</ShadowSize>
+  <Anims>
+    <Anim>
+      <Name>Walk</Name>
+      <Index>0</Index>
+      <FrameWidth>32</FrameWidth>
+      <FrameHeight>40</FrameHeight>
+      <Durations>
+        <Duration>8</Duration>   <!-- 1/60초 단위 = ~133ms -->
+        <Duration>10</Duration>  <!-- ~167ms -->
+        <Duration>8</Duration>
+        <Duration>10</Duration>
+      </Durations>
+    </Anim>
+  </Anims>
+</AnimData>
 ```
 
 **프레임 추출 공식**:

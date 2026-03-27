@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		83DC2D7E2F7642690061AE53 /* Untitled.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DC2D7D2F7642620061AE53 /* Untitled.swift */; };
-		83DC2D812F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Pokemon (Overworld).png in Resources */ = {isa = PBXBuildFile; fileRef = 83DC2D802F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Pokemon (Overworld).png */; };
-		83DC2D822F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Overworld Entities.png in Resources */ = {isa = PBXBuildFile; fileRef = 83DC2D7F2F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Overworld Entities.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,8 +32,6 @@
 		83DC2D602F7642520061AE53 /* poketmonTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = poketmonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		83DC2D6A2F7642520061AE53 /* poketmonUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = poketmonUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		83DC2D7D2F7642620061AE53 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
-		83DC2D7F2F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Overworld Entities.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Overworld Entities.png"; sourceTree = "<group>"; };
-		83DC2D802F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Pokemon (Overworld).png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Pokemon (Overworld).png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -89,8 +85,6 @@
 				83DC2D632F7642520061AE53 /* poketmonTests */,
 				83DC2D6D2F7642520061AE53 /* poketmonUITests */,
 				83DC2D532F7642500061AE53 /* Products */,
-				83DC2D7F2F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Overworld Entities.png */,
-				83DC2D802F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Pokemon (Overworld).png */,
 			);
 			sourceTree = "<group>";
 		};
@@ -224,8 +218,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				83DC2D812F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Pokemon (Overworld).png in Resources */,
-				83DC2D822F76426C0061AE53 /* DS _ DSi - Pokemon Black 2 _ White 2 - Overworld - Overworld Entities.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -407,7 +399,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = poketmon/poketmon.entitlements;
+				CODE_SIGN_ENTITLEMENTS = poketmon/App/poketmon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -432,7 +424,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = poketmon/poketmon.entitlements;
+				CODE_SIGN_ENTITLEMENTS = poketmon/App/poketmon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
