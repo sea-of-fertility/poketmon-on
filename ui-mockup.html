@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포켓몬 데스크톱 펫 - UI 목업</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    background: #1a1a2e;
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    background: rgba(30, 30, 50, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    padding: 12px 20px; gap: 8px;
+  }
+  .nav-btn {
+    padding: 8px 16px; border-radius: 8px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: #aaa; font-size: 13px; cursor: pointer; transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  .nav-btn.active { background: rgba(59,130,246,0.3); border-color: rgba(59,130,246,0.5); color: #60a5fa; }
+
+  /* Screen container */
+  .screen { display: none; padding: 80px 20px 40px; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; }
+  .screen-title {
+    font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .screen-name { font-size: 28px; font-weight: 600; margin-bottom: 24px; }
+  .screen-desc { font-size: 14px; color: #888; margin-bottom: 32px; text-align: center; max-width: 500px; line-height: 1.6; }
+
+  /* ========== SCREEN 1: Desktop Main View ========== */
+  .desktop-mockup {
+    width: 800px; height: 500px; border-radius: 12px; overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative; border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .desktop-menubar {
+    height: 28px; background: rgba(0,0,0,0.5); backdrop-filter: blur(20px);
+    display: flex; align-items: center; padding: 0 12px; justify-content: space-between;
+  }
+  .menubar-left { display: flex; gap: 14px; font-size: 13px; font-weight: 500; }
+  .menubar-right { display: flex; gap: 10px; font-size: 12px; align-items: center; }
+  .menubar-pokeball {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: linear-gradient(180deg, #ff4444 50%, #fff 50%);
+    border: 1.5px solid #333; position: relative; cursor: pointer;
+  }
+  .menubar-pokeball::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #fff; border: 1px solid #333;
+  }
+  .desktop-windows { position: relative; height: calc(100% - 28px); }
+  .fake-window {
+    position: absolute; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+  .fake-window-bar {
+    height: 28px; background: #e8e8e8; display: flex; align-items: center; padding: 0 10px; gap: 6px;
+  }
+  .win-btn { width: 10px; height: 10px; border-radius: 50%; }
+  .win-close { background: #ff5f57; }
+  .win-min { background: #ffbd2e; }
+  .win-max { background: #28c840; }
+  .fake-window-body { background: #fff; height: calc(100% - 28px); }
+  .window-browser {
+    top: 10px; left: 20px; width: 450px; height: 300px;
+  }
+  .window-finder {
+    top: 80px; left: 300px; width: 350px; height: 250px;
+  }
+  .browser-url {
+    margin: 0 8px; margin-top: 4px; padding: 4px 10px; background: #f0f0f0;
+    border-radius: 6px; font-size: 11px; color: #666;
+  }
+  .browser-content { padding: 12px; font-size: 11px; color: #333; line-height: 1.8; }
+  .finder-sidebar { float: left; width: 100px; height: 100%; background: #f5f5f5; padding: 8px; font-size: 10px; color: #666; line-height: 2; }
+  .finder-grid { padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .finder-item { width: 50px; text-align: center; font-size: 9px; color: #333; }
+  .finder-icon { width: 36px; height: 36px; margin: 0 auto 4px; background: #4a9eff; border-radius: 6px; }
+
+  /* Pokemon sprite on desktop */
+  .pokemon-sprite {
+    position: absolute; z-index: 10; cursor: grab;
+    transition: left 0.05s linear, top 0.05s linear;
+  }
+  .sprite-body {
+    width: 64px; height: 64px; image-rendering: pixelated;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="8" y="4" width="16" height="10" fill="%23f8d030" rx="3"/><rect x="6" y="10" width="20" height="14" fill="%23f8d030" rx="4"/><circle cx="12" cy="12" r="2" fill="%23222"/><circle cx="20" cy="12" r="2" fill="%23222"/><circle cx="11" cy="15" r="3" fill="%23e05030" opacity="0.5"/><circle cx="21" cy="15" r="3" fill="%23e05030" opacity="0.5"/><rect x="4" y="2" width="3" height="10" fill="%23f8d030" rx="1" transform="rotate(-15 5 7)"/><rect x="25" y="2" width="3" height="10" fill="%23f8d030" rx="1" transform="rotate(15 27 7)"/><rect x="22" y="18" width="12" height="6" fill="%23f8d030" rx="1" transform="rotate(-10 28 21)"/><path d="M24 21 L32 18 L34 21 L32 24 Z" fill="%23c8a020" transform="rotate(-10 28 21)"/><rect x="10" y="24" width="5" height="4" fill="%23f8d030" rx="1"/><rect x="17" y="24" width="5" height="4" fill="%23f8d030" rx="1"/></svg>') center/contain no-repeat;
+    animation: bounce 0.6s ease-in-out infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+  .sprite-shadow {
+    width: 40px; height: 8px; margin: 0 auto;
+    background: rgba(0,0,0,0.2); border-radius: 50%;
+    animation: shadowPulse 0.6s ease-in-out infinite;
+  }
+  @keyframes shadowPulse {
+    0%, 100% { transform: scaleX(1); opacity: 0.3; }
+    50% { transform: scaleX(0.8); opacity: 0.2; }
+  }
+  .sprite-state {
+    position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; background: rgba(0,0,0,0.7); padding: 2px 8px;
+    border-radius: 10px; white-space: nowrap; color: #4ade80;
+  }
+  .interaction-hints {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 16px; font-size: 11px; color: rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 20px;
+    backdrop-filter: blur(10px);
+  }
+  .interaction-hints span { white-space: nowrap; }
+
+  /* State machine diagram */
+  .state-diagram {
+    margin-top: 24px; padding: 24px; background: rgba(255,255,255,0.05);
+    border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); width: 800px;
+  }
+  .state-diagram h3 { font-size: 14px; margin-bottom: 16px; color: #aaa; }
+  .states-row { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .state-box {
+    padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 500;
+    border: 2px solid; text-align: center; min-width: 100px;
+  }
+  .state-idle { border-color: #4ade80; color: #4ade80; background: rgba(74,222,128,0.1); }
+  .state-walk { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,0.1); }
+  .state-run { border-color: #f59e0b; color: #f59e0b; background: rgba(245,158,11,0.1); }
+  .state-sleep { border-color: #a78bfa; color: #a78bfa; background: rgba(167,139,250,0.1); }
+  .state-react { border-color: #f472b6; color: #f472b6; background: rgba(244,114,182,0.1); }
+  .state-drag { border-color: #94a3b8; color: #94a3b8; background: rgba(148,163,184,0.1); }
+  .state-box small { display: block; font-size: 10px; color: #888; font-weight: 400; margin-top: 4px; }
+
+  /* ========== SCREEN 2: Menubar Dropdown ========== */
+  .menubar-mockup {
+    width: 600px; position: relative;
+  }
+  .menubar-full {
+    height: 28px; background: rgba(255,255,255,0.08); backdrop-filter: blur(20px);
+    border-radius: 4px 4px 0 0; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 16px;
+  }
+  .menubar-full-left { display: flex; gap: 16px; font-size: 13px; color: #ccc; }
+  .menubar-full-right { display: flex; gap: 12px; align-items: center; font-size: 12px; color: #ccc; }
+  .dropdown-panel {
+    position: absolute; right: 40px; top: 28px;
+    width: 260px; background: rgba(40,40,55,0.97);
+    backdrop-filter: blur(30px); border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
+  .dropdown-header {
+    padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .dropdown-pokemon-name { font-size: 15px; font-weight: 600; }
+  .dropdown-pokemon-status { font-size: 12px; color: #4ade80; margin-top: 3px; }
+  .dropdown-section { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .dropdown-section:last-child { border-bottom: none; }
+  .dropdown-item {
+    padding: 8px 16px; font-size: 13px; color: #ddd;
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .dropdown-item:hover { background: rgba(59,130,246,0.3); }
+  .dropdown-item .icon { width: 20px; text-align: center; font-size: 14px; }
+  .dropdown-item.danger { color: #f87171; }
+  .dropdown-item .shortcut { margin-left: auto; font-size: 11px; color: #666; }
+  .dropdown-toggle {
+    padding: 8px 16px; font-size: 13px; color: #ddd;
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .dropdown-toggle:hover { background: rgba(59,130,246,0.3); }
+  .toggle-switch {
+    margin-left: auto; width: 34px; height: 20px; border-radius: 10px;
+    background: #555; position: relative; transition: background 0.2s;
+  }
+  .toggle-switch.on { background: #4ade80; }
+  .toggle-switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%; background: #fff;
+    transition: left 0.2s;
+  }
+  .toggle-switch.on::after { left: 16px; }
+
+  /* ========== SCREEN 3: Context Menu ========== */
+  .context-mockup {
+    position: relative; width: 700px; height: 400px;
+    background: linear-gradient(135deg, #2d3748, #1a202c);
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .context-pokemon {
+    position: absolute; top: 150px; left: 280px;
+  }
+  .context-menu {
+    position: absolute; top: 140px; left: 360px;
+    width: 200px; background: rgba(40,40,55,0.97);
+    backdrop-filter: blur(30px); border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    overflow: hidden; padding: 4px 0;
+  }
+  .ctx-header {
+    padding: 8px 14px; font-size: 13px; font-weight: 600; color: #888;
+    border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 4px;
+  }
+  .ctx-item {
+    padding: 6px 14px; font-size: 13px; color: #ddd; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .ctx-item:hover { background: rgba(59,130,246,0.3); border-radius: 4px; margin: 0 4px; padding-left: 10px; }
+  .ctx-sep { height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0; }
+  .ctx-item.danger { color: #f87171; }
+  .right-click-indicator {
+    position: absolute; top: 178px; left: 340px;
+    width: 20px; height: 20px;
+  }
+  .right-click-indicator::before {
+    content: ''; display: block; width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.5); border-radius: 50%;
+    animation: clickPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes clickPulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ========== SCREEN 4: Pokemon Selector ========== */
+  .selector-window {
+    width: 480px; background: rgba(30,30,45,0.97);
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .selector-titlebar {
+    height: 40px; background: rgba(0,0,0,0.3);
+    display: flex; align-items: center; padding: 0 14px; gap: 8px;
+  }
+  .selector-titlebar .title { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #ccc; }
+  .selector-search {
+    margin: 12px 16px; padding: 8px 12px 8px 36px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; color: #aaa; font-size: 13px; width: calc(100% - 32px);
+    outline: none; position: relative;
+  }
+  .search-wrap { position: relative; margin: 12px 16px; }
+  .search-wrap::before {
+    content: 'Q'; font-family: monospace; font-weight: bold; transform: translateY(-50%) rotate(-45deg); position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 13px; z-index: 1;
+  }
+  .search-wrap input {
+    width: 100%; padding: 8px 12px 8px 36px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; color: #ccc; font-size: 13px; outline: none;
+  }
+  .search-wrap input:focus { border-color: rgba(59,130,246,0.5); }
+  .gen-tabs {
+    display: flex; margin: 0 16px; gap: 4px;
+  }
+  .gen-tab {
+    flex: 1; padding: 8px 0; text-align: center; font-size: 12px; font-weight: 500;
+    border-radius: 6px; cursor: pointer; color: #888;
+    background: rgba(255,255,255,0.04); transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .gen-tab:hover { background: rgba(255,255,255,0.08); color: #bbb; }
+  .gen-tab.active { background: rgba(59,130,246,0.2); color: #60a5fa; border-color: rgba(59,130,246,0.4); }
+  .gen-tab small { display: block; font-size: 10px; color: #666; margin-top: 2px; }
+  .type-chips {
+    display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 16px; max-height: 68px; overflow: hidden;
+  }
+  .type-chip {
+    padding: 4px 10px; border-radius: 12px; font-size: 11px; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.15); color: #aaa;
+    background: rgba(255,255,255,0.04); transition: all 0.2s;
+  }
+  .type-chip:hover { background: rgba(255,255,255,0.1); }
+  .type-chip.active { color: #fff; }
+  .type-fire.active { background: rgba(238,129,48,0.3); border-color: #ee8130; color: #ee8130; }
+  .type-water.active { background: rgba(99,144,240,0.3); border-color: #6390f0; color: #6390f0; }
+  .type-grass.active { background: rgba(122,199,76,0.3); border-color: #7ac74c; color: #7ac74c; }
+  .type-electric.active { background: rgba(247,208,44,0.3); border-color: #f7d02c; color: #f7d02c; }
+  .type-normal.active { background: rgba(168,167,122,0.3); border-color: #a8a77a; color: #a8a77a; }
+  .type-ice.active { background: rgba(150,217,214,0.3); border-color: #96d9d6; color: #96d9d6; }
+  .type-fighting.active { background: rgba(194,46,40,0.3); border-color: #c22e28; color: #c22e28; }
+  .type-poison.active { background: rgba(163,62,161,0.3); border-color: #a33ea1; color: #a33ea1; }
+  .type-ground.active { background: rgba(226,191,101,0.3); border-color: #e2bf65; color: #e2bf65; }
+  .type-flying.active { background: rgba(169,143,243,0.3); border-color: #a98ff3; color: #a98ff3; }
+  .type-psychic.active { background: rgba(249,85,135,0.3); border-color: #f95587; color: #f95587; }
+  .type-bug.active { background: rgba(166,185,26,0.3); border-color: #a6b91a; color: #a6b91a; }
+  .type-rock.active { background: rgba(182,161,54,0.3); border-color: #b6a136; color: #b6a136; }
+  .type-ghost.active { background: rgba(115,87,151,0.3); border-color: #735797; color: #735797; }
+  .type-dragon.active { background: rgba(111,53,252,0.3); border-color: #6f35fc; color: #6f35fc; }
+  .type-dark.active { background: rgba(112,87,70,0.3); border-color: #705746; color: #a08060; }
+  .type-steel.active { background: rgba(183,183,206,0.3); border-color: #b7b7ce; color: #b7b7ce; }
+  .type-fairy.active { background: rgba(214,133,173,0.3); border-color: #d685ad; color: #d685ad; }
+
+  .pokemon-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+    margin: 12px 16px; max-height: 320px; overflow-y: auto;
+    padding-right: 4px;
+  }
+  .pokemon-grid::-webkit-scrollbar { width: 6px; }
+  .pokemon-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+  .pokemon-cell {
+    padding: 8px 4px; border-radius: 8px; text-align: center; cursor: pointer;
+    background: rgba(255,255,255,0.04); border: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .pokemon-cell:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+  .pokemon-cell.selected { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.5); }
+  .pokemon-cell.current { border-color: rgba(74,222,128,0.5); }
+  .pokemon-cell.unavailable { opacity: 0.3; cursor: not-allowed; }
+  .pokemon-cell .num { font-size: 9px; color: #666; }
+  .pokemon-cell .sprite-placeholder {
+    width: 40px; height: 40px; margin: 4px auto;
+    background: rgba(255,255,255,0.06); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    overflow: hidden;
+  }
+  .pokemon-cell .sprite-placeholder img {
+    width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated;
+  }
+  .pokemon-cell .poke-name { font-size: 10px; color: #aaa; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .selector-footer {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .btn-cancel {
+    padding: 8px 20px; border-radius: 6px; font-size: 13px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #aaa; cursor: pointer;
+  }
+  .btn-confirm {
+    padding: 8px 20px; border-radius: 6px; font-size: 13px;
+    background: rgba(59,130,246,0.8); border: 1px solid rgba(59,130,246,0.6);
+    color: #fff; cursor: pointer; font-weight: 500;
+  }
+  .btn-cancel:hover { background: rgba(255,255,255,0.12); }
+  .btn-confirm:hover { background: rgba(59,130,246,1); }
+
+  /* ========== SCREEN 5: Settings Panel ========== */
+  .settings-window {
+    width: 400px; background: rgba(30,30,45,0.97);
+    border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .settings-titlebar {
+    height: 40px; background: rgba(0,0,0,0.3);
+    display: flex; align-items: center; padding: 0 14px; gap: 8px;
+  }
+  .settings-titlebar .title { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #ccc; }
+  .settings-content { padding: 20px; }
+  .settings-section { margin-bottom: 24px; }
+  .settings-section-title {
+    font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 14px;
+    padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .setting-row {
+    display: flex; align-items: center; margin-bottom: 16px;
+  }
+  .setting-label { width: 90px; font-size: 13px; color: #ccc; }
+  .setting-slider-wrap { flex: 1; }
+  .setting-slider {
+    width: 100%; height: 4px; border-radius: 2px;
+    -webkit-appearance: none; appearance: none;
+    background: linear-gradient(to right, rgba(59,130,246,0.6) 0%, rgba(59,130,246,0.6) var(--val, 50%), rgba(255,255,255,0.15) var(--val, 50%), rgba(255,255,255,0.15) 100%);
+    outline: none;
+  }
+  .setting-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .setting-slider-labels {
+    display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 4px;
+  }
+  .setting-value {
+    width: 50px; text-align: right; font-size: 13px; color: #60a5fa; font-weight: 500; margin-left: 8px;
+  }
+  .setting-checkbox {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer;
+  }
+  .checkbox-box {
+    width: 18px; height: 18px; border-radius: 4px; border: 2px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .setting-checkbox.checked .checkbox-box {
+    background: rgba(59,130,246,0.6); border-color: rgba(59,130,246,0.8);
+  }
+  .checkbox-check { color: #fff; font-size: 12px; display: none; }
+  .setting-checkbox.checked .checkbox-check { display: block; }
+  .checkbox-label { font-size: 13px; color: #ccc; }
+
+  /* Display level dropdown */
+  .setting-dropdown-wrap { flex: 1; position: relative; }
+  .setting-dropdown {
+    width: 100%; padding: 6px 12px; background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 6px;
+    color: #ccc; font-size: 13px; outline: none; cursor: pointer;
+    -webkit-appearance: none; appearance: none;
+  }
+
+  .settings-footer {
+    display: flex; justify-content: space-between;
+    padding: 12px 20px; border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .btn-reset {
+    padding: 8px 16px; border-radius: 6px; font-size: 13px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: #888; cursor: pointer;
+  }
+  .btn-close {
+    padding: 8px 20px; border-radius: 6px; font-size: 13px;
+    background: rgba(59,130,246,0.6); border: 1px solid rgba(59,130,246,0.4);
+    color: #fff; cursor: pointer;
+  }
+
+  /* Annotations */
+  .annotation {
+    position: relative; display: inline-block;
+  }
+  .anno-badge {
+    display: inline-block; padding: 3px 8px; border-radius: 4px;
+    background: rgba(245,158,11,0.2); border: 1px solid rgba(245,158,11,0.4);
+    color: #f59e0b; font-size: 10px; margin: 4px 2px;
+  }
+
+  /* Flow diagram at bottom */
+  .flow-section {
+    margin-top: 32px; padding: 24px; background: rgba(255,255,255,0.03);
+    border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); width: 100%; max-width: 480px;
+  }
+  .flow-section h3 { font-size: 13px; color: #888; margin-bottom: 12px; }
+  .flow-item {
+    padding: 6px 12px; font-size: 12px; color: #aaa; line-height: 1.8;
+    border-left: 2px solid rgba(59,130,246,0.3); margin-left: 8px; margin-bottom: 4px;
+  }
+  .flow-item strong { color: #60a5fa; }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<div class="nav">
+  <div class="nav-btn active" onclick="showScreen(0)">1. 데스크톱 메인 뷰</div>
+  <div class="nav-btn" onclick="showScreen(1)">2. 메뉴바 드롭다운</div>
+  <div class="nav-btn" onclick="showScreen(2)">3. 컨텍스트 메뉴</div>
+  <div class="nav-btn" onclick="showScreen(3)">4. 포켓몬 선택기</div>
+  <div class="nav-btn" onclick="showScreen(4)">5. 설정 패널</div>
+</div>
+
+<!-- ========== SCREEN 1 ========== -->
+<div class="screen active" id="screen-0">
+  <div class="screen-title">화면 1</div>
+  <div class="screen-name">데스크톱 메인 뷰</div>
+  <div class="screen-desc">투명한 전체화면 윈도우 위에서 포켓몬이 자유롭게 돌아다닌다. 다른 앱 위에 항상 떠 있으며, 포켓몬 외 영역은 클릭이 통과된다.</div>
+
+  <div class="desktop-mockup">
+    <div class="desktop-menubar">
+      <div class="menubar-left">
+        <span>App</span> <span>Finder</span> <span>File</span> <span>Edit</span> <span>View</span>
+      </div>
+      <div class="menubar-right">
+        <span>Wi-Fi</span> <span>BAT</span>
+        <div class="menubar-pokeball" title="포켓몬 메뉴바 아이콘"></div>
+        <span>3:42 PM</span>
+      </div>
+    </div>
+    <div class="desktop-windows">
+      <div class="fake-window window-browser">
+        <div class="fake-window-bar">
+          <div class="win-btn win-close"></div>
+          <div class="win-btn win-min"></div>
+          <div class="win-btn win-max"></div>
+        </div>
+        <div class="fake-window-body">
+          <div class="browser-url">claude.ai</div>
+          <div class="browser-content">
+            안녕하세요! 무엇을 도와드릴까요?<br><br>
+            포켓몬 데스크톱 펫 앱을 만들고 있습니다...<br><br>
+            <span style="color:#aaa">--------------------</span>
+          </div>
+        </div>
+      </div>
+      <div class="fake-window window-finder">
+        <div class="fake-window-bar">
+          <div class="win-btn win-close"></div>
+          <div class="win-btn win-min"></div>
+          <div class="win-btn win-max"></div>
+        </div>
+        <div class="fake-window-body">
+          <div class="finder-sidebar">
+            Favorites<br>Desktop<br>Documents<br>Downloads
+          </div>
+          <div class="finder-grid">
+            <div class="finder-item"><div class="finder-icon"></div>project</div>
+            <div class="finder-item"><div class="finder-icon" style="background:#ff9500"></div>sprites</div>
+            <div class="finder-item"><div class="finder-icon" style="background:#8e8e93"></div>docs</div>
+          </div>
+        </div>
+      </div>
+      <!-- Pokemon sprite walking on desktop -->
+      <div class="pokemon-sprite" id="walking-pokemon" style="left: 500px; top: 200px;">
+        <div class="sprite-state">Walk ↘</div>
+        <div class="sprite-body"></div>
+        <div class="sprite-shadow"></div>
+      </div>
+    </div>
+    <div class="interaction-hints">
+      <span>좌클릭: 반응</span>
+      <span>드래그: 이동</span>
+      <span>우클릭: 메뉴</span>
+      <span>더블클릭: 선택기</span>
+    </div>
+  </div>
+
+  <!-- State Machine -->
+  <div class="state-diagram">
+    <h3>포켓몬 상태 머신 (State Machine)</h3>
+    <div class="states-row">
+      <div class="state-box state-idle">Idle<small>Idle-Anim.png</small></div>
+      <div style="color:#555;align-self:center">←→</div>
+      <div class="state-box state-walk">Walk<small>Walk-Anim.png (8방향)</small></div>
+      <div style="color:#555;align-self:center">←→</div>
+      <div class="state-box state-run">Run<small>Walk-Anim.png (빠르게)</small></div>
+    </div>
+    <div class="states-row">
+      <div class="state-box state-sleep">Sleep<small>Sleep-Anim.png</small></div>
+      <div style="color:#555;align-self:center">←→</div>
+      <div class="state-box state-react">Reaction<small>Eat/Hop/Hurt</small></div>
+      <div style="width:60px"></div>
+      <div class="state-box state-drag">Dragged<small>마우스 드래그</small></div>
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:#666">
+      Walk 3~10초 → Idle 2~5초 → Walk 반복 | 60초 Idle 유지 → Sleep 자동 전환
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCREEN 2 ========== -->
+<div class="screen" id="screen-1">
+  <div class="screen-title">화면 2</div>
+  <div class="screen-name">메뉴바 드롭다운</div>
+  <div class="screen-desc">상단 메뉴바의 몬스터볼 아이콘을 클릭하면 나타나는 드롭다운. 현재 상태 확인, 포켓몬 변경, 설정, 행동 제어가 가능하다.</div>
+
+  <div class="menubar-mockup">
+    <div class="menubar-full">
+      <div class="menubar-full-left">
+        <span>App</span> <span>Finder</span> <span>File</span> <span>Edit</span>
+      </div>
+      <div class="menubar-full-right">
+        <span>Wi-Fi</span>
+        <span>BAT 100%</span>
+        <div class="menubar-pokeball" style="box-shadow: 0 0 0 2px rgba(59,130,246,0.6);"></div>
+        <span>3:42 PM</span>
+      </div>
+    </div>
+    <div class="dropdown-panel">
+      <div class="dropdown-header">
+        <div class="dropdown-pokemon-name">피카츄 (Pikachu) #025</div>
+        <div class="dropdown-pokemon-status">상태: 걷는 중</div>
+      </div>
+      <div class="dropdown-section">
+        <div class="dropdown-item" onclick="showScreen(3)">
+          <span class="icon" style="font-size:11px">▶</span> 포켓몬 변경...
+        </div>
+        <div class="dropdown-item" onclick="showScreen(4)">
+          <span class="icon">-</span> 설정...
+        </div>
+      </div>
+      <div class="dropdown-section">
+        <div class="dropdown-toggle" id="pause-toggle" onclick="togglePause()">
+          <span class="icon">||</span> 일시정지
+          <div class="toggle-switch" id="pause-switch"></div>
+        </div>
+        <div class="dropdown-item">
+          <span class="icon">Zz</span> 재우기
+        </div>
+        <div class="dropdown-item">
+          <span class="icon">>></span> 뛰게 하기
+          <span class="shortcut">10초</span>
+        </div>
+      </div>
+      <div class="dropdown-section">
+        <div class="dropdown-item danger">
+          <span class="icon">x</span> 종료
+          <span class="shortcut">⌘Q</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow-section" style="margin-top:40px;">
+    <h3>메뉴바 항목 동작</h3>
+    <div class="flow-item"><strong>포켓몬 변경</strong> → 포켓몬 선택기 윈도우(화면 4) 열기</div>
+    <div class="flow-item"><strong>설정</strong> → 설정 패널(화면 5) 열기</div>
+    <div class="flow-item"><strong>일시정지</strong> → 토글: 모든 움직임/애니메이션 멈춤 ↔ 재개</div>
+    <div class="flow-item"><strong>재우기</strong> → 강제 Sleep 상태 전환</div>
+    <div class="flow-item"><strong>뛰게 하기</strong> → Run 상태 10초 → 자동 Walk 복귀</div>
+    <div class="flow-item"><strong>종료</strong> → 앱 완전 종료 (⌘Q)</div>
+  </div>
+</div>
+
+<!-- ========== SCREEN 3 ========== -->
+<div class="screen" id="screen-2">
+  <div class="screen-title">화면 3</div>
+  <div class="screen-name">우클릭 컨텍스트 메뉴</div>
+  <div class="screen-desc">포켓몬 스프라이트 위에서 우클릭하면 나타나는 네이티브 macOS 스타일 메뉴. 메뉴바 드롭다운의 간소화 버전이다.</div>
+
+  <div class="context-mockup">
+    <div class="context-pokemon">
+      <div class="sprite-body" style="width:48px;height:48px;"></div>
+    </div>
+    <div class="right-click-indicator"></div>
+    <div class="context-menu">
+      <div class="ctx-header">피카츄 #025</div>
+      <div class="ctx-item" onclick="showScreen(3)">포켓몬 변경...</div>
+      <div class="ctx-item" onclick="showScreen(4)">설정...</div>
+      <div class="ctx-sep"></div>
+      <div class="ctx-item">재우기</div>
+      <div class="ctx-item">뛰게 하기</div>
+      <div class="ctx-sep"></div>
+      <div class="ctx-item danger">종료</div>
+    </div>
+    <div style="position:absolute;bottom:16px;left:16px;font-size:11px;color:rgba(255,255,255,0.3)">
+      ← 포켓몬 위에서 우클릭 시 표시
+    </div>
+  </div>
+
+  <div class="flow-section" style="margin-top: 24px;">
+    <h3>상태에 따른 메뉴 변화</h3>
+    <div class="flow-item">포켓몬이 <strong>Sleep 상태</strong>일 때 → "재우기" 대신 <strong>"깨우기"</strong> 표시</div>
+    <div class="flow-item">그 외 모든 상태 → <strong>"재우기"</strong> 표시</div>
+  </div>
+</div>
+
+<!-- ========== SCREEN 4 ========== -->
+<div class="screen" id="screen-3">
+  <div class="screen-title">화면 4</div>
+  <div class="screen-name">포켓몬 선택기</div>
+  <div class="screen-desc">데스크톱에 표시할 포켓몬을 선택하는 윈도우. 세대 탭 + 타입 필터 + 검색으로 633종 중에서 빠르게 찾을 수 있다.</div>
+
+  <div class="selector-window">
+    <div class="selector-titlebar">
+      <div class="win-btn win-close"></div>
+      <div class="win-btn win-min"></div>
+      <div class="win-btn win-max"></div>
+      <div class="title">포켓몬 선택</div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <input type="text" placeholder="이름 또는 번호로 검색..." id="pokemon-search" oninput="filterPokemon()">
+    </div>
+
+    <!-- Gen Tabs -->
+    <div class="gen-tabs">
+      <div class="gen-tab active" onclick="selectGen(this, 1)">Gen 1<small>151종</small></div>
+      <div class="gen-tab" onclick="selectGen(this, 2)">Gen 2<small>100종</small></div>
+      <div class="gen-tab" onclick="selectGen(this, 3)">Gen 3<small>135종</small></div>
+      <div class="gen-tab" onclick="selectGen(this, 4)">Gen 4<small>107종</small></div>
+      <div class="gen-tab" onclick="selectGen(this, 5)">Gen 5<small>140종</small></div>
+    </div>
+
+    <!-- Type Chips -->
+    <div class="type-chips">
+      <div class="type-chip type-normal" onclick="toggleType(this)">Normal</div>
+      <div class="type-chip type-fire active" onclick="toggleType(this)">Fire</div>
+      <div class="type-chip type-water" onclick="toggleType(this)">Water</div>
+      <div class="type-chip type-grass" onclick="toggleType(this)">Grass</div>
+      <div class="type-chip type-electric" onclick="toggleType(this)">Electric</div>
+      <div class="type-chip type-ice" onclick="toggleType(this)">Ice</div>
+      <div class="type-chip type-fighting" onclick="toggleType(this)">Fighting</div>
+      <div class="type-chip type-poison" onclick="toggleType(this)">Poison</div>
+      <div class="type-chip type-ground" onclick="toggleType(this)">Ground</div>
+      <div class="type-chip type-flying" onclick="toggleType(this)">Flying</div>
+      <div class="type-chip type-psychic" onclick="toggleType(this)">Psychic</div>
+      <div class="type-chip type-bug" onclick="toggleType(this)">Bug</div>
+      <div class="type-chip type-rock" onclick="toggleType(this)">Rock</div>
+      <div class="type-chip type-ghost" onclick="toggleType(this)">Ghost</div>
+      <div class="type-chip type-dragon" onclick="toggleType(this)">Dragon</div>
+      <div class="type-chip type-dark" onclick="toggleType(this)">Dark</div>
+      <div class="type-chip type-steel" onclick="toggleType(this)">Steel</div>
+      <div class="type-chip type-fairy" onclick="toggleType(this)">Fairy</div>
+    </div>
+
+    <!-- Pokemon Grid -->
+    <div class="pokemon-grid" id="pokemon-grid">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Footer -->
+    <div class="selector-footer">
+      <button class="btn-cancel">취소</button>
+      <button class="btn-confirm">선택 완료</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCREEN 5 ========== -->
+<div class="screen" id="screen-4">
+  <div class="screen-title">화면 5</div>
+  <div class="screen-name">설정 패널</div>
+  <div class="screen-desc">포켓몬의 크기, 투명도, 이동 속도, 행동 패턴 등을 조절한다. 변경 즉시 반영되며 UserDefaults에 저장된다.</div>
+
+  <div class="settings-window">
+    <div class="settings-titlebar">
+      <div class="win-btn win-close"></div>
+      <div class="win-btn win-min"></div>
+      <div class="win-btn win-max"></div>
+      <div class="title">설정</div>
+    </div>
+    <div class="settings-content">
+      <!-- Display Section -->
+      <div class="settings-section">
+        <div class="settings-section-title">표시</div>
+        <div class="setting-row">
+          <div class="setting-label">크기</div>
+          <div class="setting-slider-wrap">
+            <input type="range" class="setting-slider" min="50" max="200" value="100" style="--val:33%" oninput="updateSlider(this, '%')">
+            <div class="setting-slider-labels"><span>50%</span><span>200%</span></div>
+          </div>
+          <div class="setting-value">100%</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">투명도</div>
+          <div class="setting-slider-wrap">
+            <input type="range" class="setting-slider" min="30" max="100" value="100" style="--val:100%" oninput="updateSlider(this, '%')">
+            <div class="setting-slider-labels"><span>투명</span><span>불투명</span></div>
+          </div>
+          <div class="setting-value">100%</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">표시 위치</div>
+          <div class="setting-dropdown-wrap">
+            <select class="setting-dropdown">
+              <option>항상 위 (모든 창 위)</option>
+              <option>일반 (다른 창에 가려짐)</option>
+              <option>바탕화면만 (모든 창 아래)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Behavior Section -->
+      <div class="settings-section">
+        <div class="settings-section-title">행동</div>
+        <div class="setting-row">
+          <div class="setting-label">이동 속도</div>
+          <div class="setting-slider-wrap">
+            <input type="range" class="setting-slider" min="1" max="5" value="3" style="--val:50%" oninput="updateSliderStep(this)">
+            <div class="setting-slider-labels"><span>느림</span><span>빠름</span></div>
+          </div>
+          <div class="setting-value">보통</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">활동 빈도</div>
+          <div class="setting-slider-wrap">
+            <input type="range" class="setting-slider" min="1" max="5" value="3" style="--val:50%" oninput="updateSliderStep(this)">
+            <div class="setting-slider-labels"><span>조용함</span><span>활발함</span></div>
+          </div>
+          <div class="setting-value">보통</div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">수면까지</div>
+          <div class="setting-slider-wrap">
+            <input type="range" class="setting-slider" min="1" max="10" value="3" style="--val:22%" oninput="updateSliderMin(this)">
+            <div class="setting-slider-labels"><span>1분</span><span>10분</span></div>
+          </div>
+          <div class="setting-value">3분</div>
+        </div>
+      </div>
+
+      <!-- System Section -->
+      <div class="settings-section">
+        <div class="settings-section-title">시스템</div>
+        <div class="setting-checkbox" onclick="toggleCheck(this)">
+          <div class="checkbox-box"><span class="checkbox-check">v</span></div>
+          <span class="checkbox-label">로그인 시 자동 실행</span>
+        </div>
+        <div class="setting-checkbox checked" onclick="toggleCheck(this)">
+          <div class="checkbox-box"><span class="checkbox-check">v</span></div>
+          <span class="checkbox-label">화면 가장자리에서 반사</span>
+        </div>
+        <div class="setting-checkbox" onclick="toggleCheck(this)">
+          <div class="checkbox-box"><span class="checkbox-check">v</span></div>
+          <span class="checkbox-label">다른 윈도우 위에서만 이동</span>
+        </div>
+      </div>
+    </div>
+    <div class="settings-footer">
+      <button class="btn-reset">기본값 복원</button>
+      <button class="btn-close">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Screen navigation
+  function showScreen(idx) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('screen-' + idx).classList.add('active');
+    document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  }
+
+  // Pause toggle
+  function togglePause() {
+    const sw = document.getElementById('pause-switch');
+    sw.classList.toggle('on');
+  }
+
+  // Gen tab selection
+  function selectGen(el, gen) {
+    document.querySelectorAll('.gen-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    populateGrid(gen);
+  }
+
+  // Type chip toggle
+  function toggleType(el) {
+    el.classList.toggle('active');
+  }
+
+  // Checkbox toggle
+  function toggleCheck(el) {
+    el.classList.toggle('checked');
+  }
+
+  // Slider updates
+  function updateSlider(el, suffix) {
+    const pct = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.setProperty('--val', pct + '%');
+    el.closest('.setting-row').querySelector('.setting-value').textContent = el.value + suffix;
+  }
+  function updateSliderStep(el) {
+    const labels = ['매우 느림', '느림', '보통', '빠름', '매우 빠름'];
+    const pct = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.setProperty('--val', pct + '%');
+    el.closest('.setting-row').querySelector('.setting-value').textContent = labels[el.value - 1];
+  }
+  function updateSliderMin(el) {
+    const pct = (el.value - el.min) / (el.max - el.min) * 100;
+    el.style.setProperty('--val', pct + '%');
+    el.closest('.setting-row').querySelector('.setting-value').textContent = el.value + '분';
+  }
+
+  // Pokemon data (Gen 1 sample)
+  const gen1Sample = [
+    {id:1,name:'Bulbasaur'}, {id:2,name:'Ivysaur'}, {id:3,name:'Venusaur'},
+    {id:4,name:'Charmander'}, {id:5,name:'Charmeleon'}, {id:6,name:'Charizard'},
+    {id:7,name:'Squirtle'}, {id:8,name:'Wartortle'}, {id:9,name:'Blastoise'},
+    {id:10,name:'Caterpie'}, {id:11,name:'Metapod'}, {id:12,name:'Butterfree'},
+    {id:13,name:'Weedle'}, {id:14,name:'Kakuna'}, {id:15,name:'Beedrill'},
+    {id:16,name:'Pidgey'}, {id:17,name:'Pidgeotto'}, {id:18,name:'Pidgeot'},
+    {id:19,name:'Rattata'}, {id:20,name:'Raticate'},
+    {id:25,name:'Pikachu',current:true},
+    {id:21,name:'Spearow'}, {id:22,name:'Fearow'},
+    {id:23,name:'Ekans'}, {id:24,name:'Arbok'},
+    {id:26,name:'Raichu'}, {id:27,name:'Sandshrew'},
+    {id:28,name:'Sandslash'}, {id:29,name:'Nidoran-F'},
+    {id:30,name:'Nidorina'},
+  ];
+  const gen2Sample = [
+    {id:152,name:'Chikorita'}, {id:153,name:'Bayleef'}, {id:154,name:'Meganium'},
+    {id:155,name:'Cyndaquil'}, {id:156,name:'Quilava'}, {id:157,name:'Typhlosion'},
+    {id:158,name:'Totodile'}, {id:159,name:'Croconaw'}, {id:160,name:'Feraligatr'},
+    {id:161,name:'Sentret'}, {id:162,name:'Furret'}, {id:163,name:'Hoothoot'},
+    {id:164,name:'Noctowl'}, {id:165,name:'Ledyba'}, {id:166,name:'Ledian'},
+  ];
+  const gen3Sample = [
+    {id:252,name:'Treecko'}, {id:253,name:'Grovyle'}, {id:254,name:'Sceptile'},
+    {id:255,name:'Torchic'}, {id:256,name:'Combusken'}, {id:257,name:'Blaziken'},
+    {id:258,name:'Mudkip'}, {id:259,name:'Marshtomp'}, {id:260,name:'Swampert'},
+    {id:261,name:'Poochyena'}, {id:262,name:'Mightyena'}, {id:263,name:'Zigzagoon'},
+    {id:264,name:'Linoone'}, {id:265,name:'Wurmple'}, {id:266,name:'Silcoon'},
+  ];
+  const gen4Sample = [
+    {id:387,name:'Turtwig'}, {id:388,name:'Grotle'}, {id:389,name:'Torterra'},
+    {id:390,name:'Chimchar'}, {id:391,name:'Monferno'}, {id:392,name:'Infernape'},
+    {id:393,name:'Piplup'}, {id:394,name:'Prinplup'}, {id:395,name:'Empoleon'},
+    {id:396,name:'Starly'}, {id:397,name:'Staravia'}, {id:398,name:'Staraptor'},
+    {id:399,name:'Bidoof'}, {id:400,name:'Bibarel'}, {id:401,name:'Kricketot'},
+  ];
+  const gen5Sample = [
+    {id:494,name:'Victini'}, {id:495,name:'Snivy'}, {id:496,name:'Servine'},
+    {id:497,name:'Serperior'}, {id:498,name:'Tepig'}, {id:499,name:'Pignite'},
+    {id:500,name:'Emboar'}, {id:501,name:'Oshawott'}, {id:502,name:'Dewott'},
+    {id:503,name:'Samurott'}, {id:504,name:'Patrat'}, {id:505,name:'Watchog'},
+    {id:514,name:'Simisear',unavailable:true}, {id:516,name:'Simipour',unavailable:true},
+    {id:506,name:'Lillipup'},
+  ];
+  const genData = { 1: gen1Sample, 2: gen2Sample, 3: gen3Sample, 4: gen4Sample, 5: gen5Sample };
+
+  function populateGrid(gen) {
+    const grid = document.getElementById('pokemon-grid');
+    const data = genData[gen] || gen1Sample;
+    grid.innerHTML = data.map(p => {
+      let cls = 'pokemon-cell';
+      if (p.current) cls += ' current';
+      if (p.unavailable) cls += ' unavailable';
+      if (p.id === 25) cls += ' selected';
+      const pid = String(p.id).padStart(4,'0');
+      const portraitUrl = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/' + pid + '/Normal.png';
+      return '<div class="' + cls + '" onclick="' + (p.unavailable ? '' : 'selectPokemon(this)') + '">'
+        + '<div class="num">#' + String(p.id).padStart(3,'0') + '</div>'
+        + '<div class="sprite-placeholder"><img src="' + portraitUrl + '" onerror="this.parentElement.textContent=\'' + String(p.id).padStart(3,'0') + '\'"></div>'
+        + '<div class="poke-name">' + p.name + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function selectPokemon(el) {
+    if (el.classList.contains('unavailable')) return;
+    document.querySelectorAll('.pokemon-cell').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function filterPokemon() {
+    const query = document.getElementById('pokemon-search').value.toLowerCase();
+    if (!query) { populateGrid(1); return; }
+    const all = [...gen1Sample,...gen2Sample,...gen3Sample,...gen4Sample,...gen5Sample];
+    const filtered = all.filter(p =>
+      p.name.toLowerCase().includes(query) || String(p.id).includes(query)
+    );
+    const grid = document.getElementById('pokemon-grid');
+    grid.innerHTML = filtered.map(p => {
+      let cls = 'pokemon-cell';
+      if (p.current) cls += ' current';
+      if (p.unavailable) cls += ' unavailable';
+      const pid = String(p.id).padStart(4,'0');
+      const portraitUrl = 'https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/' + pid + '/Normal.png';
+      return '<div class="' + cls + '" onclick="' + (p.unavailable ? '' : 'selectPokemon(this)') + '">'
+        + '<div class="num">#' + String(p.id).padStart(3,'0') + '</div>'
+        + '<div class="sprite-placeholder"><img src="' + portraitUrl + '" onerror="this.parentElement.textContent=\'' + String(p.id).padStart(3,'0') + '\'"></div>'
+        + '<div class="poke-name">' + p.name + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  // Init
+  populateGrid(1);
+
+  // Animate pokemon walking
+  let pokX = 500, pokY = 200, dirX = 1.2, dirY = 0.8;
+  function animateWalk() {
+    const el = document.getElementById('walking-pokemon');
+    if (!el) { requestAnimationFrame(animateWalk); return; }
+    pokX += dirX; pokY += dirY;
+    if (pokX > 700 || pokX < 50) dirX *= -1;
+    if (pokY > 350 || pokY < 50) dirY *= -1;
+    el.style.left = pokX + 'px';
+    el.style.top = pokY + 'px';
+    const dir = Math.abs(dirX) > Math.abs(dirY) ? (dirX > 0 ? '→' : '←') : (dirY > 0 ? '↓' : '↑');
+    el.querySelector('.sprite-state').textContent = 'Walk ' + dir;
+    requestAnimationFrame(animateWalk);
+  }
+  animateWalk();
+</script>
+</body>
+</html>

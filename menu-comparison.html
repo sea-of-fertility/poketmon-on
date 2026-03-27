@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>NSMenu vs NSPopover 비교</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    background: #2d2d3f;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .subtitle { color: #888; font-size: 14px; margin-bottom: 48px; }
+
+  .demo-area {
+    display: flex;
+    gap: 80px;
+    align-items: flex-start;
+  }
+
+  .demo-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .demo-label {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ccc;
+  }
+  .demo-sublabel {
+    font-size: 12px;
+    color: #777;
+    margin-top: -8px;
+    margin-bottom: 8px;
+  }
+
+  /* ===================== */
+  /* Fake macOS Menu Bar    */
+  /* ===================== */
+  .menubar {
+    background: linear-gradient(180deg, #3a3a4a, #2e2e3e);
+    height: 28px;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 12px;
+    width: 360px;
+    gap: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-bottom: none;
+  }
+  .menubar-icon {
+    width: 18px; height: 18px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    transition: background 0.15s;
+  }
+  .menubar-icon:hover { background: rgba(255,255,255,0.25); }
+  .menubar-icon.active { background: rgba(100, 140, 255, 0.4); }
+
+  .desktop {
+    width: 360px;
+    height: 320px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 0 0 8px 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Grid dots on desktop */
+  .desktop::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Fake pokemon on desktop */
+  .fake-pokemon {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 48px;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    animation: bounce 1.5s ease-in-out infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-6px); }
+  }
+
+  .fake-shadow {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 50%;
+    animation: shadow-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes shadow-pulse {
+    0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.3; }
+    50% { transform: translateX(-50%) scaleX(0.8); opacity: 0.2; }
+  }
+
+  /* ===================== */
+  /* NSMenu Style           */
+  /* ===================== */
+  .nsmenu {
+    position: absolute;
+    top: 0;
+    right: 30px;
+    width: 200px;
+    background: rgba(40, 40, 55, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 4px 0;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 10;
+  }
+  .nsmenu.hide { display: none; }
+
+  .nsmenu-item {
+    padding: 4px 16px;
+    font-size: 13px;
+    color: #e0e0e0;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 24px;
+    transition: background 0.08s;
+  }
+  .nsmenu-item:hover {
+    background: #3478f6;
+    color: #fff;
+    border-radius: 4px;
+    margin: 0 4px;
+    padding: 4px 12px;
+  }
+  .nsmenu-item .shortcut {
+    margin-left: auto;
+    color: #666;
+    font-size: 12px;
+  }
+  .nsmenu-item:hover .shortcut { color: rgba(255,255,255,0.7); }
+  .nsmenu-separator {
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+    margin: 4px 12px;
+  }
+  .nsmenu-item.disabled {
+    color: #555;
+    pointer-events: none;
+  }
+
+  /* ===================== */
+  /* NSPopover Style         */
+  /* ===================== */
+  .nspopover {
+    position: absolute;
+    top: 0;
+    right: 20px;
+    width: 220px;
+    background: rgba(40, 40, 55, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 10;
+    overflow: hidden;
+  }
+  .nspopover.hide { display: none; }
+
+  /* Arrow */
+  .nspopover::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    right: 24px;
+    width: 14px;
+    height: 14px;
+    background: rgba(40, 40, 55, 0.98);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-bottom: none;
+    border-right: none;
+    transform: rotate(45deg);
+  }
+
+  .popover-header {
+    padding: 16px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .popover-pokemon {
+    font-size: 48px;
+    margin-bottom: 4px;
+  }
+  .popover-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e0e0e0;
+  }
+  .popover-id {
+    font-size: 11px;
+    color: #888;
+  }
+  .popover-status {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 2px 10px;
+    background: rgba(52, 199, 89, 0.15);
+    color: #34c759;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .popover-actions {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .popover-btn {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.06);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .popover-btn:hover {
+    background: rgba(100, 140, 255, 0.2);
+    border-color: rgba(100, 140, 255, 0.4);
+    transform: scale(1.05);
+  }
+  .popover-btn-label {
+    font-size: 9px;
+    color: #666;
+    text-align: center;
+    margin-top: 2px;
+  }
+  .popover-btn-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .popover-controls {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .popover-slider-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .popover-slider-row:last-child { margin-bottom: 0; }
+  .popover-slider-label {
+    font-size: 12px;
+    color: #aaa;
+  }
+  .popover-slider {
+    -webkit-appearance: none;
+    width: 110px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    outline: none;
+  }
+  .popover-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #3478f6;
+    cursor: pointer;
+  }
+
+  .popover-footer {
+    padding: 8px 16px;
+    display: flex;
+    gap: 6px;
+  }
+  .popover-footer-btn {
+    flex: 1;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    color: #aaa;
+    font-size: 11px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .popover-footer-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+  }
+  .popover-footer-btn.quit {
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.2);
+  }
+  .popover-footer-btn.quit:hover {
+    background: rgba(255, 107, 107, 0.15);
+  }
+
+  /* Instruction */
+  .instruction {
+    margin-top: 48px;
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .key {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    font-size: 12px;
+    color: #aaa;
+  }
+
+  /* Annotation arrows */
+  .annotation {
+    position: absolute;
+    font-size: 11px;
+    color: #f0c040;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<h1>NSMenu vs NSPopover 비교</h1>
+<p class="subtitle">메뉴바 아이콘을 클릭해서 각각의 차이를 확인하세요</p>
+
+<div class="demo-area">
+
+  <!-- ===== NSMenu Demo ===== -->
+  <div class="demo-column">
+    <div class="demo-label">NSMenu</div>
+    <div class="demo-sublabel">시스템 표준 드롭다운</div>
+    <div>
+      <div class="menubar">
+        <div class="menubar-icon active" id="menu-trigger" onclick="toggleMenu()">P</div>
+        <div class="menubar-icon">W</div>
+        <div class="menubar-icon">B</div>
+      </div>
+      <div class="desktop">
+        <div class="nsmenu" id="nsmenu">
+          <div class="nsmenu-item disabled" style="font-size:11px; color:#888;">
+            피카츄 #025 — Idle
+          </div>
+          <div class="nsmenu-separator"></div>
+          <div class="nsmenu-item">일시정지</div>
+          <div class="nsmenu-item">재우기</div>
+          <div class="nsmenu-item">뛰게 하기</div>
+          <div class="nsmenu-separator"></div>
+          <div class="nsmenu-item">포켓몬 변경...</div>
+          <div class="nsmenu-item">설정... <span class="shortcut">⌘,</span></div>
+          <div class="nsmenu-separator"></div>
+          <div class="nsmenu-item" style="color:#ff6b6b;">종료 <span class="shortcut">⌘Q</span></div>
+        </div>
+        <div class="annotation" style="top:12px; left:12px;">
+          ← 텍스트만 가능<br>
+          &nbsp;&nbsp;&nbsp;이미지/슬라이더 불가
+        </div>
+        <div class="fake-shadow"></div>
+        <div class="fake-pokemon">⚡</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== NSPopover Demo ===== -->
+  <div class="demo-column">
+    <div class="demo-label">NSPopover</div>
+    <div class="demo-sublabel">커스텀 팝업 (SwiftUI)</div>
+    <div>
+      <div class="menubar">
+        <div class="menubar-icon active" id="popover-trigger" onclick="togglePopover()">P</div>
+        <div class="menubar-icon">W</div>
+        <div class="menubar-icon">B</div>
+      </div>
+      <div class="desktop">
+        <div class="nspopover" id="nspopover">
+          <div class="popover-header">
+            <div class="popover-pokemon">⚡</div>
+            <div class="popover-name">피카츄</div>
+            <div class="popover-id">#025 · Electric</div>
+            <div class="popover-status">Idle</div>
+          </div>
+          <div class="popover-actions">
+            <div class="popover-btn-wrap">
+              <div class="popover-btn">💤</div>
+              <div class="popover-btn-label">재우기</div>
+            </div>
+            <div class="popover-btn-wrap">
+              <div class="popover-btn">⏸</div>
+              <div class="popover-btn-label">정지</div>
+            </div>
+            <div class="popover-btn-wrap">
+              <div class="popover-btn">🏃</div>
+              <div class="popover-btn-label">뛰기</div>
+            </div>
+            <div class="popover-btn-wrap">
+              <div class="popover-btn">🔄</div>
+              <div class="popover-btn-label">변경</div>
+            </div>
+          </div>
+          <div class="popover-controls">
+            <div class="popover-slider-row">
+              <span class="popover-slider-label">크기</span>
+              <input type="range" class="popover-slider" min="0" max="100" value="50">
+            </div>
+            <div class="popover-slider-row">
+              <span class="popover-slider-label">속도</span>
+              <input type="range" class="popover-slider" min="0" max="100" value="65">
+            </div>
+          </div>
+          <div class="popover-footer">
+            <div class="popover-footer-btn">설정</div>
+            <div class="popover-footer-btn quit">종료</div>
+          </div>
+        </div>
+        <div class="annotation" style="top:12px; left:12px;">
+          ← 이미지, 버튼, 슬라이더<br>
+          &nbsp;&nbsp;&nbsp;자유롭게 배치 가능
+        </div>
+        <div class="fake-shadow"></div>
+        <div class="fake-pokemon">⚡</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="instruction">
+  메뉴바의 <span class="key">P</span> 아이콘을 클릭하면 각 메뉴가 토글됩니다
+</div>
+
+<script>
+  function toggleMenu() {
+    const menu = document.getElementById('nsmenu');
+    const trigger = document.getElementById('menu-trigger');
+    menu.classList.toggle('hide');
+    trigger.classList.toggle('active');
+  }
+
+  function togglePopover() {
+    const pop = document.getElementById('nspopover');
+    const trigger = document.getElementById('popover-trigger');
+    pop.classList.toggle('hide');
+    trigger.classList.toggle('active');
+  }
+</script>
+
+</body>
+</html>

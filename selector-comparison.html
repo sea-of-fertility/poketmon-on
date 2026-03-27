@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>포켓몬 선택기 - SwiftUI vs AppKit 비교</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    background: #1a1a2e;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 20px;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #777; font-size: 13px; margin-bottom: 36px; }
+
+  .demo-area {
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .demo-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .demo-label { font-size: 17px; font-weight: 600; }
+  .demo-sublabel { font-size: 11px; color: #666; margin-top: -6px; }
+
+  /* ========================== */
+  /* macOS Window Chrome         */
+  /* ========================== */
+  .window {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .titlebar {
+    height: 38px;
+    background: linear-gradient(180deg, #3a3a4a, #323242);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .traffic-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .dot-red { background: #ff5f57; }
+  .dot-yellow { background: #ffbd2e; }
+  .dot-green { background: #28c840; }
+  .titlebar-text {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    color: #aaa;
+    margin-right: 52px;
+  }
+
+  .window-body {
+    background: #2a2a3a;
+    width: 380px;
+  }
+
+  /* ========================== */
+  /* AppKit Style (Left)         */
+  /* ========================== */
+  .appkit-search {
+    margin: 10px 12px 8px;
+    padding: 5px 8px 5px 28px;
+    width: calc(100% - 24px);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    color: #ccc;
+    font-size: 13px;
+    outline: none;
+  }
+  .appkit-search::placeholder { color: #555; }
+  .appkit-search-wrap {
+    position: relative;
+  }
+  .appkit-search-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #555;
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  .appkit-segments {
+    display: flex;
+    margin: 0 12px 8px;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .appkit-seg {
+    flex: 1;
+    padding: 4px 0;
+    text-align: center;
+    font-size: 11px;
+    color: #888;
+    cursor: pointer;
+    background: rgba(255,255,255,0.03);
+    border-right: 1px solid rgba(255,255,255,0.08);
+    transition: all 0.15s;
+  }
+  .appkit-seg:last-child { border-right: none; }
+  .appkit-seg.active {
+    background: rgba(52, 120, 246, 0.25);
+    color: #6aaaff;
+  }
+  .appkit-seg:hover:not(.active) {
+    background: rgba(255,255,255,0.06);
+  }
+
+  .appkit-type-bar {
+    display: flex;
+    margin: 0 12px 6px;
+    gap: 0;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .appkit-type-btn {
+    flex: 1;
+    padding: 3px 0;
+    text-align: center;
+    font-size: 9px;
+    color: #666;
+    cursor: pointer;
+    background: rgba(255,255,255,0.02);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.12s;
+  }
+  .appkit-type-btn:last-child { border-right: none; }
+  .appkit-type-btn.active {
+    background: rgba(52, 120, 246, 0.2);
+    color: #6aaaff;
+  }
+  .appkit-type-btn:hover:not(.active) {
+    background: rgba(255,255,255,0.05);
+  }
+
+  .appkit-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    padding: 4px 12px 12px;
+    height: 310px;
+    overflow-y: auto;
+    align-content: start;
+  }
+  .appkit-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .appkit-cell:hover {
+    background: rgba(255,255,255,0.06);
+  }
+  .appkit-cell.selected {
+    background: rgba(52, 120, 246, 0.2);
+    outline: 1px solid rgba(52, 120, 246, 0.5);
+    border-radius: 6px;
+  }
+  .appkit-cell-img {
+    width: 40px; height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+  .appkit-cell-name {
+    font-size: 9px;
+    color: #888;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60px;
+    text-align: center;
+  }
+  .appkit-cell-id {
+    font-size: 8px;
+    color: #555;
+  }
+
+  /* Scrollbar style */
+  .appkit-grid::-webkit-scrollbar { width: 6px; }
+  .appkit-grid::-webkit-scrollbar-track { background: transparent; }
+  .appkit-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+
+  /* AppKit annotation */
+  .appkit-note {
+    font-size: 10px;
+    color: #f0c040;
+    padding: 0 12px 8px;
+    line-height: 1.5;
+  }
+
+  /* ========================== */
+  /* SwiftUI Style (Right)       */
+  /* ========================== */
+  .swiftui-search {
+    margin: 10px 12px 8px;
+    padding: 7px 10px 7px 32px;
+    width: calc(100% - 24px);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: #e0e0e0;
+    font-size: 13px;
+    outline: none;
+    transition: border 0.2s;
+  }
+  .swiftui-search:focus {
+    border-color: rgba(52, 120, 246, 0.6);
+    box-shadow: 0 0 0 3px rgba(52, 120, 246, 0.15);
+  }
+  .swiftui-search::placeholder { color: #666; }
+  .swiftui-search-wrap { position: relative; }
+  .swiftui-search-icon {
+    position: absolute;
+    left: 22px; top: 50%; transform: translateY(-50%);
+    color: #666; font-size: 14px; pointer-events: none;
+  }
+
+  .swiftui-tabs {
+    display: flex;
+    margin: 0 12px 10px;
+    gap: 4px;
+  }
+  .swiftui-tab {
+    flex: 1;
+    padding: 6px 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: #777;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    background: transparent;
+  }
+  .swiftui-tab.active {
+    background: rgba(52, 120, 246, 0.2);
+    color: #6aaaff;
+  }
+  .swiftui-tab:hover:not(.active) {
+    background: rgba(255,255,255,0.05);
+    color: #aaa;
+  }
+
+  .swiftui-type-chips {
+    display: flex;
+    gap: 4px;
+    padding: 0 12px 10px;
+    flex-wrap: wrap;
+  }
+  .swiftui-chip {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .chip-fire { background: rgba(255,100,50,0.15); color: #ff8844; }
+  .chip-fire.active { background: rgba(255,100,50,0.3); border-color: rgba(255,100,50,0.5); }
+  .chip-water { background: rgba(50,140,255,0.15); color: #5599ff; }
+  .chip-water.active { background: rgba(50,140,255,0.3); border-color: rgba(50,140,255,0.5); }
+  .chip-grass { background: rgba(80,200,80,0.15); color: #66cc66; }
+  .chip-electric { background: rgba(255,210,50,0.15); color: #eebb33; }
+  .chip-psychic { background: rgba(255,80,150,0.15); color: #ff6699; }
+  .chip-normal { background: rgba(170,170,150,0.15); color: #aaa; }
+  .chip-all { background: rgba(255,255,255,0.06); color: #888; }
+  .chip-all.active { background: rgba(255,255,255,0.12); color: #ccc; border-color: rgba(255,255,255,0.2); }
+
+  .swiftui-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 0 12px 12px;
+    height: 280px;
+    overflow-y: auto;
+    align-content: start;
+  }
+  .swiftui-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 2px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .swiftui-cell:hover {
+    background: rgba(255,255,255,0.06);
+    transform: scale(1.05);
+  }
+  .swiftui-cell.selected {
+    background: rgba(52, 120, 246, 0.15);
+    border-color: rgba(52, 120, 246, 0.4);
+    box-shadow: 0 2px 8px rgba(52, 120, 246, 0.2);
+  }
+  .swiftui-cell-img {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+  }
+  .swiftui-cell-name {
+    font-size: 10px;
+    color: #aaa;
+    margin-top: 3px;
+    font-weight: 500;
+  }
+  .swiftui-cell-id {
+    font-size: 8px;
+    color: #555;
+  }
+
+  .swiftui-grid::-webkit-scrollbar { width: 6px; }
+  .swiftui-grid::-webkit-scrollbar-track { background: transparent; }
+  .swiftui-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+
+  /* Bottom bar */
+  .swiftui-bottom {
+    padding: 8px 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .swiftui-count {
+    font-size: 11px;
+    color: #666;
+  }
+  .swiftui-select-btn {
+    padding: 5px 16px;
+    background: #3478f6;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .swiftui-select-btn:hover {
+    background: #4488ff;
+  }
+
+  .appkit-bottom {
+    padding: 8px 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .appkit-btn {
+    padding: 4px 14px;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.15);
+    transition: all 0.12s;
+  }
+  .appkit-btn-cancel {
+    background: rgba(255,255,255,0.06);
+    color: #aaa;
+  }
+  .appkit-btn-ok {
+    background: rgba(52,120,246,0.3);
+    color: #6aaaff;
+    border-color: rgba(52,120,246,0.4);
+  }
+
+  /* Comparison footer */
+  .comparison {
+    margin-top: 40px;
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .comp-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 16px 20px;
+    width: 340px;
+  }
+  .comp-card h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #aaa;
+  }
+  .comp-item {
+    font-size: 12px;
+    color: #666;
+    padding: 3px 0;
+    line-height: 1.5;
+  }
+  .comp-item span {
+    color: #888;
+  }
+  .tag-easy {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    background: rgba(40,200,80,0.15);
+    color: #4dcc6d;
+    margin-left: 4px;
+  }
+  .tag-hard {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    background: rgba(255,80,80,0.15);
+    color: #ff6666;
+    margin-left: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>포켓몬 선택기 UI 비교</h1>
+<p class="subtitle">같은 기능, 다른 프레임워크 — 결과물과 구현 복잡도의 차이</p>
+
+<div class="demo-area">
+
+  <!-- ===== AppKit ===== -->
+  <div class="demo-column">
+    <div class="demo-label">AppKit (NSCollectionView)</div>
+    <div class="demo-sublabel">명령형 · delegate 패턴 · 수동 레이아웃</div>
+    <div class="window">
+      <div class="titlebar">
+        <div class="traffic-dot dot-red"></div>
+        <div class="traffic-dot dot-yellow"></div>
+        <div class="traffic-dot dot-green"></div>
+        <div class="titlebar-text">포켓몬 선택</div>
+      </div>
+      <div class="window-body" id="appkit-body">
+        <div class="appkit-search-wrap">
+          <span class="appkit-search-icon">Q</span>
+          <input type="text" class="appkit-search" id="appkit-search" placeholder="이름 또는 번호로 검색" oninput="filterAppKit()">
+        </div>
+        <div class="appkit-segments" id="appkit-segs">
+          <div class="appkit-seg active" data-gen="0" onclick="setAppKitGen(this)">전체</div>
+          <div class="appkit-seg" data-gen="1" onclick="setAppKitGen(this)">Gen 1</div>
+          <div class="appkit-seg" data-gen="2" onclick="setAppKitGen(this)">Gen 2</div>
+          <div class="appkit-seg" data-gen="3" onclick="setAppKitGen(this)">Gen 3</div>
+          <div class="appkit-seg" data-gen="4" onclick="setAppKitGen(this)">Gen 4</div>
+          <div class="appkit-seg" data-gen="5" onclick="setAppKitGen(this)">Gen 5</div>
+        </div>
+        <div class="appkit-type-bar" id="appkit-types">
+          <div class="appkit-type-btn active" data-type="all" onclick="setAppKitType(this)">All</div>
+          <div class="appkit-type-btn" data-type="fire" onclick="setAppKitType(this)">Fire</div>
+          <div class="appkit-type-btn" data-type="water" onclick="setAppKitType(this)">Water</div>
+          <div class="appkit-type-btn" data-type="grass" onclick="setAppKitType(this)">Grass</div>
+          <div class="appkit-type-btn" data-type="electric" onclick="setAppKitType(this)">Elec</div>
+          <div class="appkit-type-btn" data-type="psychic" onclick="setAppKitType(this)">Psy</div>
+          <div class="appkit-type-btn" data-type="normal" onclick="setAppKitType(this)">Norm</div>
+        </div>
+        <div class="appkit-grid" id="appkit-grid"></div>
+        <div class="appkit-bottom">
+          <div class="appkit-btn appkit-btn-cancel">Cancel</div>
+          <div class="appkit-btn appkit-btn-ok">OK</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SwiftUI ===== -->
+  <div class="demo-column">
+    <div class="demo-label">SwiftUI (LazyVGrid)</div>
+    <div class="demo-sublabel">선언형 · @State 바인딩 · 자동 레이아웃</div>
+    <div class="window">
+      <div class="titlebar">
+        <div class="traffic-dot dot-red"></div>
+        <div class="traffic-dot dot-yellow"></div>
+        <div class="traffic-dot dot-green"></div>
+        <div class="titlebar-text">포켓몬 선택</div>
+      </div>
+      <div class="window-body" id="swiftui-body">
+        <div class="swiftui-search-wrap">
+          <span class="swiftui-search-icon">Q</span>
+          <input type="text" class="swiftui-search" id="swiftui-search" placeholder="포켓몬 검색..." oninput="filterSwiftUI()">
+        </div>
+        <div class="swiftui-tabs" id="swiftui-tabs">
+          <div class="swiftui-tab active" data-gen="0" onclick="setSwiftUIGen(this)">전체</div>
+          <div class="swiftui-tab" data-gen="1" onclick="setSwiftUIGen(this)">Gen 1</div>
+          <div class="swiftui-tab" data-gen="2" onclick="setSwiftUIGen(this)">Gen 2</div>
+          <div class="swiftui-tab" data-gen="3" onclick="setSwiftUIGen(this)">Gen 3</div>
+          <div class="swiftui-tab" data-gen="4" onclick="setSwiftUIGen(this)">Gen 4</div>
+          <div class="swiftui-tab" data-gen="5" onclick="setSwiftUIGen(this)">Gen 5</div>
+        </div>
+        <div class="swiftui-type-chips">
+          <div class="swiftui-chip chip-all active" data-type="all" onclick="setType(this)">All</div>
+          <div class="swiftui-chip chip-fire" data-type="fire" onclick="setType(this)">Fire</div>
+          <div class="swiftui-chip chip-water" data-type="water" onclick="setType(this)">Water</div>
+          <div class="swiftui-chip chip-grass" data-type="grass" onclick="setType(this)">Grass</div>
+          <div class="swiftui-chip chip-electric" data-type="electric" onclick="setType(this)">Electric</div>
+          <div class="swiftui-chip chip-psychic" data-type="psychic" onclick="setType(this)">Psychic</div>
+          <div class="swiftui-chip chip-normal" data-type="normal" onclick="setType(this)">Normal</div>
+        </div>
+        <div class="swiftui-grid" id="swiftui-grid"></div>
+        <div class="swiftui-bottom">
+          <span class="swiftui-count" id="swiftui-count">151 / 649</span>
+          <button class="swiftui-select-btn">Select</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Comparison Cards -->
+<div class="comparison">
+  <div class="comp-card">
+    <h3>AppKit 구현 시 필요한 것</h3>
+    <div class="comp-item">NSCollectionView + FlowLayout 설정 <span class="tag-hard">복잡</span></div>
+    <div class="comp-item">NSCollectionViewDataSource 프로토콜 구현</div>
+    <div class="comp-item">NSCollectionViewDelegate 프로토콜 구현</div>
+    <div class="comp-item">NSCollectionViewItem 서브클래스 (셀)</div>
+    <div class="comp-item">NSSearchFieldDelegate 수동 연결</div>
+    <div class="comp-item">NSSegmentedControl target/action 연결</div>
+    <div class="comp-item">reloadData() 수동 호출 <span class="tag-hard">수동</span></div>
+    <div class="comp-item">NSRect 프레임 좌표 수동 계산</div>
+  </div>
+  <div class="comp-card">
+    <h3>SwiftUI 구현 시 필요한 것</h3>
+    <div class="comp-item">LazyVGrid + GridItem <span class="tag-easy">간단</span></div>
+    <div class="comp-item">@State var search, selectedGen, selectedType</div>
+    <div class="comp-item">computed property로 필터링 <span class="tag-easy">자동</span></div>
+    <div class="comp-item">ForEach로 그리드 렌더링</div>
+    <div class="comp-item">@State 변경 시 자동 갱신 <span class="tag-easy">자동</span></div>
+  </div>
+</div>
+
+<script>
+const POKEMON = [
+  {id:1,name:"이상해씨",emoji:"🌱",gen:1,type:"grass"},
+  {id:2,name:"이상해풀",emoji:"🌿",gen:1,type:"grass"},
+  {id:3,name:"이상해꽃",emoji:"🌸",gen:1,type:"grass"},
+  {id:4,name:"파이리",emoji:"🔥",gen:1,type:"fire"},
+  {id:5,name:"리자드",emoji:"🦎",gen:1,type:"fire"},
+  {id:6,name:"리자몽",emoji:"🐉",gen:1,type:"fire"},
+  {id:7,name:"꼬부기",emoji:"🐢",gen:1,type:"water"},
+  {id:8,name:"어니부기",emoji:"💧",gen:1,type:"water"},
+  {id:9,name:"거북왕",emoji:"🌊",gen:1,type:"water"},
+  {id:10,name:"캐터피",emoji:"🐛",gen:1,type:"normal"},
+  {id:11,name:"단데기",emoji:"🫘",gen:1,type:"normal"},
+  {id:12,name:"버터플",emoji:"🦋",gen:1,type:"normal"},
+  {id:16,name:"구구",emoji:"🐦",gen:1,type:"normal"},
+  {id:17,name:"피죤",emoji:"🦅",gen:1,type:"normal"},
+  {id:25,name:"피카츄",emoji:"⚡",gen:1,type:"electric"},
+  {id:26,name:"라이츄",emoji:"⚡",gen:1,type:"electric"},
+  {id:35,name:"삐삐",emoji:"🧚",gen:1,type:"normal"},
+  {id:39,name:"푸린",emoji:"🎤",gen:1,type:"normal"},
+  {id:54,name:"고라파덕",emoji:"🦆",gen:1,type:"water"},
+  {id:63,name:"캐이시",emoji:"🔮",gen:1,type:"psychic"},
+  {id:65,name:"후딘",emoji:"🥄",gen:1,type:"psychic"},
+  {id:79,name:"야돈",emoji:"🦛",gen:1,type:"psychic"},
+  {id:120,name:"별가사리",emoji:"⭐",gen:1,type:"water"},
+  {id:129,name:"잉어킹",emoji:"🐟",gen:1,type:"water"},
+  {id:130,name:"갸라도스",emoji:"🐲",gen:1,type:"water"},
+  {id:133,name:"이브이",emoji:"🦊",gen:1,type:"normal"},
+  {id:143,name:"잠만보",emoji:"😴",gen:1,type:"normal"},
+  {id:150,name:"뮤츠",emoji:"👾",gen:1,type:"psychic"},
+  {id:151,name:"뮤",emoji:"🩷",gen:1,type:"psychic"},
+  {id:152,name:"치코리타",emoji:"🍃",gen:2,type:"grass"},
+  {id:155,name:"브케인",emoji:"🔥",gen:2,type:"fire"},
+  {id:158,name:"리아코",emoji:"🐊",gen:2,type:"water"},
+  {id:172,name:"피츄",emoji:"⚡",gen:2,type:"electric"},
+  {id:175,name:"토게피",emoji:"🥚",gen:2,type:"normal"},
+  {id:179,name:"메리프",emoji:"🐑",gen:2,type:"electric"},
+  {id:196,name:"에브이",emoji:"☀️",gen:2,type:"psychic"},
+  {id:245,name:"스이쿤",emoji:"💎",gen:2,type:"water"},
+  {id:249,name:"루기아",emoji:"🌀",gen:2,type:"psychic"},
+  {id:251,name:"세레비",emoji:"🌲",gen:2,type:"grass"},
+  {id:252,name:"나무지기",emoji:"🦎",gen:3,type:"grass"},
+  {id:255,name:"아차모",emoji:"🐣",gen:3,type:"fire"},
+  {id:258,name:"물짱이",emoji:"🐟",gen:3,type:"water"},
+  {id:280,name:"랄토스",emoji:"👒",gen:3,type:"psychic"},
+  {id:302,name:"깜까미",emoji:"💎",gen:3,type:"normal"},
+  {id:350,name:"밀로틱",emoji:"🐍",gen:3,type:"water"},
+  {id:384,name:"레쿠쟈",emoji:"🐉",gen:3,type:"normal"},
+  {id:387,name:"모부기",emoji:"🐢",gen:4,type:"grass"},
+  {id:390,name:"불꽃숭이",emoji:"🐒",gen:4,type:"fire"},
+  {id:393,name:"팽도리",emoji:"🐧",gen:4,type:"water"},
+  {id:403,name:"꼬링크",emoji:"⚡",gen:4,type:"electric"},
+  {id:448,name:"루카리오",emoji:"🥊",gen:4,type:"normal"},
+  {id:468,name:"토게키스",emoji:"✈️",gen:4,type:"normal"},
+  {id:475,name:"엘레이드",emoji:"⚔️",gen:4,type:"psychic"},
+  {id:495,name:"주리비얀",emoji:"🐍",gen:5,type:"grass"},
+  {id:498,name:"뚜꾸리",emoji:"🐷",gen:5,type:"fire"},
+  {id:501,name:"수댕이",emoji:"🦦",gen:5,type:"water"},
+  {id:587,name:"에몽가",emoji:"🐿️",gen:5,type:"electric"},
+  {id:643,name:"레시라무",emoji:"🤍",gen:5,type:"fire"},
+  {id:644,name:"제크로무",emoji:"🖤",gen:5,type:"electric"},
+  {id:649,name:"게노세크트",emoji:"🤖",gen:5,type:"normal"},
+];
+
+let appKitGen = 0;
+let appKitType = "all";
+let swiftUIGen = 0;
+let swiftUIType = "all";
+let appKitSelected = 25;
+let swiftUISelected = 25;
+
+function renderAppKit() {
+  const search = document.getElementById('appkit-search').value.toLowerCase();
+  const grid = document.getElementById('appkit-grid');
+  const filtered = POKEMON.filter(p =>
+    (appKitGen === 0 || p.gen === appKitGen) &&
+    (appKitType === 'all' || p.type === appKitType) &&
+    (search === '' || p.name.includes(search) || String(p.id).includes(search))
+  );
+  grid.innerHTML = filtered.map(p => `
+    <div class="appkit-cell ${p.id === appKitSelected ? 'selected' : ''}"
+         onclick="appKitSelected=${p.id};renderAppKit()">
+      <div class="appkit-cell-img">${p.emoji}</div>
+      <div class="appkit-cell-id">#${String(p.id).padStart(3,'0')}</div>
+      <div class="appkit-cell-name">${p.name}</div>
+    </div>
+  `).join('');
+}
+
+function renderSwiftUI() {
+  const search = document.getElementById('swiftui-search').value.toLowerCase();
+  const grid = document.getElementById('swiftui-grid');
+  const filtered = POKEMON.filter(p =>
+    (swiftUIGen === 0 || p.gen === swiftUIGen) &&
+    (swiftUIType === 'all' || p.type === swiftUIType) &&
+    (search === '' || p.name.includes(search) || String(p.id).includes(search))
+  );
+  grid.innerHTML = filtered.map(p => `
+    <div class="swiftui-cell ${p.id === swiftUISelected ? 'selected' : ''}"
+         onclick="swiftUISelected=${p.id};renderSwiftUI()">
+      <div class="swiftui-cell-img">${p.emoji}</div>
+      <div class="swiftui-cell-name">${p.name}</div>
+      <div class="swiftui-cell-id">#${String(p.id).padStart(3,'0')}</div>
+    </div>
+  `).join('');
+  document.getElementById('swiftui-count').textContent = `${filtered.length} / ${POKEMON.length}`;
+}
+
+function setAppKitGen(el) {
+  appKitGen = parseInt(el.dataset.gen);
+  document.querySelectorAll('.appkit-seg').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  renderAppKit();
+}
+
+function setAppKitType(el) {
+  appKitType = el.dataset.type;
+  document.querySelectorAll('.appkit-type-btn').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  renderAppKit();
+}
+
+function setSwiftUIGen(el) {
+  swiftUIGen = parseInt(el.dataset.gen);
+  document.querySelectorAll('.swiftui-tab').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  renderSwiftUI();
+}
+
+function setType(el) {
+  swiftUIType = el.dataset.type;
+  document.querySelectorAll('.swiftui-chip').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  renderSwiftUI();
+}
+
+function filterAppKit() { renderAppKit(); }
+function filterSwiftUI() { renderSwiftUI(); }
+
+renderAppKit();
+renderSwiftUI();
+</script>
+
+</body>
+</html>
