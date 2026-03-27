@@ -9,7 +9,12 @@
       "Bash(python3:*)",
       "Bash(plutil -p /Users/hyungjunpark/dev/poketmon/poketmon/Info.plist)",
       "Bash(ls /Users/hyungjunpark/dev/poketmon/poketmon/*.plist)",
-      "Bash(ls /Users/hyungjunpark/dev/poketmon/*.plist)"
+      "Bash(ls /Users/hyungjunpark/dev/poketmon/*.plist)",
+      "Bash(sudo xcode-select:*)",
+      "Bash(swiftc:*)",
+      "Bash(grep -E \"\\\\.\\(swift|json|png|jpg|gif|sh\\)$\")",
+      "Bash(find /Users/hyungjunpark/dev/poketmon -name \"*.swift\" -exec wc -l {} +)",
+      "Bash(xcodebuild -project poketmon.xcodeproj -scheme poketmon -configuration Debug build)"
     ]
   }
 }

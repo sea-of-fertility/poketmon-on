@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		83DC2D7E2F7642690061AE53 /* Untitled.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83DC2D7D2F7642620061AE53 /* Untitled.swift */; };
+		83DC2D822F7700010061AE53 /* Sprites in Resources */ = {isa = PBXBuildFile; fileRef = 83DC2D812F7700010061AE53 /* Sprites */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,11 +33,15 @@
 		83DC2D602F7642520061AE53 /* poketmonTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = poketmonTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		83DC2D6A2F7642520061AE53 /* poketmonUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = poketmonUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		83DC2D7D2F7642620061AE53 /* Untitled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Untitled.swift; sourceTree = "<group>"; };
+		83DC2D812F7700010061AE53 /* Sprites */ = {isa = PBXFileReference; lastKnownFileType = folder; path = poketmon/Resources/Sprites; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		83DC2D542F7642500061AE53 /* poketmon */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				83DC2D802F7700010061AE53 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
 			path = poketmon;
 			sourceTree = "<group>";
 		};
@@ -51,6 +56,16 @@
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		83DC2D802F7700010061AE53 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resources/Sprites,
+			);
+			target = 83DC2D512F7642500061AE53 /* poketmon */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		83DC2D4F2F7642500061AE53 /* Frameworks */ = {
@@ -81,6 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				83DC2D7D2F7642620061AE53 /* Untitled.swift */,
+				83DC2D812F7700010061AE53 /* Sprites */,
 				83DC2D542F7642500061AE53 /* poketmon */,
 				83DC2D632F7642520061AE53 /* poketmonTests */,
 				83DC2D6D2F7642520061AE53 /* poketmonUITests */,
@@ -218,6 +234,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				83DC2D822F7700010061AE53 /* Sprites in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

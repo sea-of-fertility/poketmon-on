@@ -1,13 +1,16 @@
 #!/bin/bash
 # PMDCollab SpriteCollab - Batch Download Script
-# Downloads Walk-Anim.png, Walk-Shadow.png, Idle-Anim.png, Sleep-Anim.png + AnimData.xml
-# for all Gen 1-5 Pokemon (633 available out of 649)
+# 포켓몬당 13파일: AnimData.xml + 6종 Anim.png + 6종 Shadow.png
+# + portrait 이미지 (선택기 그리드용)
+# 633종 (Gen 1-5, 누락 16종 제외)
 
 BASE_URL="https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite"
-OUT_DIR="./poketmon/Resources/Sprites"
-mkdir -p "$OUT_DIR"
+PORTRAIT_URL="https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait"
+SPRITE_DIR="./poketmon/Resources/Sprites"
+PORTRAIT_DIR="./poketmon/Resources/Portraits"
+mkdir -p "$SPRITE_DIR" "$PORTRAIT_DIR"
 
-ANIMATIONS=("Walk" "Idle" "Sleep")
+ANIMATIONS=("Walk" "Idle" "Sleep" "Eat" "Hop" "Hurt")
 FILES_PER_ANIM=("Anim" "Shadow")
 
 # Total: 633 Pokemon
@@ -55,18 +58,24 @@ POKEMON_IDS=(
   0641 0642 0643 0644 0645 0646 0647 0648 0649 
 )
 
+TOTAL=${#POKEMON_IDS[@]}
+COUNT=0
+
 for ID in "${POKEMON_IDS[@]}"; do
-  mkdir -p "$OUT_DIR/$ID"
-  # Download AnimData.xml
-  curl -sL "$BASE_URL/$ID/AnimData.xml" -o "$OUT_DIR/$ID/AnimData.xml"
-  # Download animation PNGs
+  COUNT=$((COUNT + 1))
+  mkdir -p "$SPRITE_DIR/$ID"
+  # AnimData.xml (필수)
+  curl -sfL "$BASE_URL/$ID/AnimData.xml" -o "$SPRITE_DIR/$ID/AnimData.xml"
+  # 애니메이션 PNG (-sf: 404 시 파일 생성 안 함)
   for ANIM in "${ANIMATIONS[@]}"; do
     for TYPE in "${FILES_PER_ANIM[@]}"; do
-      curl -sL "$BASE_URL/$ID/$ANIM-$TYPE.png" -o "$OUT_DIR/$ID/$ANIM-$TYPE.png"
+      curl -sfL "$BASE_URL/$ID/$ANIM-$TYPE.png" -o "$SPRITE_DIR/$ID/$ANIM-$TYPE.png"
     done
   done
-  echo "Downloaded: $ID"
-  sleep 0.1  # Rate limiting
+  # Portrait (선택기 그리드 썸네일)
+  curl -sfL "$PORTRAIT_URL/$ID/Normal.png" -o "$PORTRAIT_DIR/$ID.png"
+  echo "[$COUNT/$TOTAL] $ID"
+  sleep 0.1
 done
 
-echo "Download complete! ${#POKEMON_IDS[@]} Pokemon sprites downloaded."
+echo "다운로드 완료! $TOTAL종 포켓몬 스프라이트 + portrait 저장됨."
