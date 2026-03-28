@@ -95,9 +95,9 @@ struct SpriteSheet {
             allFrames.append(dirFrames)
         }
 
-        // 8방향 미만이면 빈 배열로 채움
+        // 8방향 미만이면 첫 번째 방향의 프레임으로 채움
         while allFrames.count < 8 {
-            allFrames.append([])
+            allFrames.append(allFrames[0])
         }
 
         return SpriteSheet(frames: allFrames, frameWidth: fw, frameHeight: fh)
