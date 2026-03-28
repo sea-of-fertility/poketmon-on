@@ -51,15 +51,15 @@ poketmon/
 - Run 상태는 별도 모션 없이 Walk 애니메이션 속도 증가로 처리
 
 ## 개발 계획
-8단계 순차 개발. 상세 내용은 @plan.md 참고.
+8단계 순차 개발. 상세 내용은 plan.md 참고.
 현재: Phase 1 준비 중 (디렉토리 구조 생성 완료, mockup 고도화 진행 중)
 
 ## 참고 문서
-- @plan.md — 전체 개발 계획 (Phase 1~8)
-- @SCREEN_SPEC.md — 화면별 상세 스펙
-- @SPRITE_INTEGRATION_PLAN.md — 스프라이트 구조/파싱/다운로드 상세
-- @pokemon_data.json — 649종 포켓몬 데이터 (id, name, gen, types)
-- @ui-mockup.html — UI 목업 (브라우저에서 열어 확인, portrait 이미지 포함)
+- plan.md — 전체 개발 계획 (Phase 1~8)
+- SCREEN_SPEC.md — 화면별 상세 스펙
+- SPRITE_INTEGRATION_PLAN.md — 스프라이트 구조/파싱/다운로드 상세
+- pokemon_data.json — 649종 포켓몬 데이터 (id, name, gen, types)
+- ui-mockup.html — UI 목업 (브라우저에서 열어 확인, portrait 이미지 포함)
 
 ## 코딩 규칙
 - 주석/커밋 메시지: 한국어
