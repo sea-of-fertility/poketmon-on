@@ -17,6 +17,22 @@ final class ScreenGeometry {
     /// 개별 모니터 frame 배열 (글로벌 좌표)
     private(set) var screenFrames: [CGRect] = []
 
+    /// 개별 모니터 이름 배열 (screenFrames와 동일 순서)
+    private(set) var screenNames: [String] = []
+
+    /// 특정 모니터로 이동 제한 (nil이면 모든 모니터 사용)
+    var restrictedScreenName: String? = nil
+
+    /// 제한 모니터 또는 전체 모니터 frame 배열
+    private var activeScreenFrames: [CGRect] {
+        if let name = restrictedScreenName,
+           let idx = screenNames.firstIndex(of: name),
+           idx < screenFrames.count {
+            return [screenFrames[idx]]
+        }
+        return screenFrames
+    }
+
     /// 주 모니터 높이 (renderSize 계산용)
     var primaryScreenHeight: CGFloat {
         screenFrames.first?.height ?? 1080
@@ -47,6 +63,7 @@ final class ScreenGeometry {
         guard !screens.isEmpty else { return }
 
         screenFrames = screens.map { $0.frame }
+        screenNames = screens.map { $0.localizedName }
         unionFrame = screenFrames.dropFirst().reduce(screenFrames[0]) { $0.union($1) }
     }
 
@@ -54,19 +71,20 @@ final class ScreenGeometry {
 
     /// 해당 점이 실제 모니터 위에 있는지 확인
     func isOnScreen(_ point: CGPoint, margin: CGFloat = 0) -> Bool {
-        screenFrames.contains { frame in
+        activeScreenFrames.contains { frame in
             frame.insetBy(dx: margin, dy: margin).contains(point)
         }
     }
 
     /// dead zone에 빠진 점을 가장 가까운 모니터 안쪽으로 보정
     func clampToNearestScreen(_ point: CGPoint, margin: CGFloat = 0) -> CGPoint {
-        guard !screenFrames.isEmpty else { return point }
+        let frames = activeScreenFrames
+        guard !frames.isEmpty else { return point }
 
         var bestPoint = point
         var bestDistance = CGFloat.greatestFiniteMagnitude
 
-        for frame in screenFrames {
+        for frame in frames {
             let inset = frame.insetBy(dx: margin, dy: margin)
             guard inset.width > 0, inset.height > 0 else { continue }
 
@@ -90,10 +108,11 @@ final class ScreenGeometry {
 
     /// 실제 모니터 위의 랜덤 목표점 생성
     func randomTarget(margin: CGFloat = 40) -> CGPoint {
-        guard !screenFrames.isEmpty else { return .zero }
+        let frames = activeScreenFrames
+        guard !frames.isEmpty else { return .zero }
 
-        // 랜덤 모니터 선택
-        let frame = screenFrames.randomElement()!
+        // 랜덤 모니터 선택 (제한 시 해당 모니터만)
+        let frame = frames.randomElement()!
         let inset = frame.insetBy(dx: margin, dy: margin)
 
         guard inset.width > 0, inset.height > 0 else {

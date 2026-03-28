@@ -1,0 +1,385 @@
+//
+//  SettingsManager.swift
+//  poketmon
+//
+//  UserDefaults 기반 설정 관리자
+//  @Observable로 SwiftUI 바인딩 + PetStateMachine 동적 반영
+//  변경 즉시 저장, 앱 실행 시 자동 로드
+//
+
+import AppKit
+import Observation
+import ServiceManagement
+
+// MARK: - 표시 위치 옵션
+
+enum WindowLevelOption: Int, CaseIterable {
+    case alwaysOnTop = 0   // 항상 위 (모든 창 위)
+    case normal = 1        // 일반 (다른 창에 가려짐)
+    case desktopOnly = 2   // 바탕화면만 (모든 창 아래)
+
+    var displayName: String {
+        switch self {
+        case .alwaysOnTop: "항상 위 (모든 창 위)"
+        case .normal: "일반 (다른 창에 가려짐)"
+        case .desktopOnly: "바탕화면만 (모든 창 아래)"
+        }
+    }
+
+    var windowLevel: NSWindow.Level {
+        switch self {
+        case .alwaysOnTop: .floating
+        case .normal: .normal
+        case .desktopOnly: NSWindow.Level(Int(CGWindowLevelForKey(.desktopIconWindow)))
+        }
+    }
+}
+
+// MARK: - SettingsManager
+
+@Observable
+final class SettingsManager {
+
+    // MARK: - UserDefaults 키
+
+    private enum Key {
+        static let spriteScale = "com.poketmon.settings.spriteScale"
+        static let opacity = "com.poketmon.settings.opacity"
+        static let windowLevel = "com.poketmon.settings.windowLevel"
+        static let movementSpeed = "com.poketmon.settings.movementSpeed"
+        static let activityFrequency = "com.poketmon.settings.activityFrequency"
+        static let sleepTimeout = "com.poketmon.settings.sleepTimeout"
+        static let autoLaunch = "com.poketmon.settings.autoLaunch"
+        static let currentPokemonID = "com.poketmon.settings.currentPokemonID"
+        static let lastPositionX = "com.poketmon.settings.lastPositionX"
+        static let lastPositionY = "com.poketmon.settings.lastPositionY"
+        static let restrictedMonitor = "com.poketmon.settings.restrictedMonitor"
+    }
+
+    // MARK: - 기본값
+
+    private enum Default {
+        static let spriteScale: Double = 100       // 100%
+        static let opacity: Double = 100           // 100%
+        static let windowLevel: Int = 0            // 항상 위
+        static let movementSpeed: Int = 3          // 보통
+        static let activityFrequency: Int = 3      // 보통
+        static let sleepTimeout: Int = 3           // 3분
+        static let autoLaunch: Bool = false
+    }
+
+    // MARK: - 표시 설정
+
+    /// 로딩 중 didSet 부작용 억제
+    private var isLoading = false
+
+    /// 크기 배율 (50~200, 기본 100)
+    var spriteScale: Double = Default.spriteScale {
+        didSet {
+            guard !isLoading else { return }
+            save(spriteScale, forKey: Key.spriteScale)
+        }
+    }
+
+    /// 투명도 (30~100, 기본 100)
+    var opacity: Double = Default.opacity {
+        didSet {
+            guard !isLoading else { return }
+            save(opacity, forKey: Key.opacity)
+            applyOpacity()
+        }
+    }
+
+    /// 표시 위치
+    var windowLevelOption: WindowLevelOption = .alwaysOnTop {
+        didSet {
+            guard !isLoading else { return }
+            save(windowLevelOption.rawValue, forKey: Key.windowLevel)
+            applyWindowLevel()
+        }
+    }
+
+    /// 이동 범위 제한 모니터 (nil이면 모든 모니터)
+    var restrictedMonitorName: String? = nil {
+        didSet {
+            guard !isLoading else { return }
+            if let name = restrictedMonitorName {
+                save(name, forKey: Key.restrictedMonitor)
+            } else {
+                defaults.removeObject(forKey: Key.restrictedMonitor)
+            }
+            applyMonitorRestriction()
+        }
+    }
+
+    // MARK: - 행동 설정
+
+    /// 이동 속도 (1~5, 기본 3)
+    var movementSpeed: Int = Default.movementSpeed {
+        didSet {
+            guard !isLoading else { return }
+            save(movementSpeed, forKey: Key.movementSpeed)
+            applyBehaviorSettings()
+        }
+    }
+
+    /// 활동 빈도 (1~5, 기본 3)
+    var activityFrequency: Int = Default.activityFrequency {
+        didSet {
+            guard !isLoading else { return }
+            save(activityFrequency, forKey: Key.activityFrequency)
+            applyBehaviorSettings()
+        }
+    }
+
+    /// 수면까지 (1~10분, 기본 3분)
+    var sleepTimeout: Int = Default.sleepTimeout {
+        didSet {
+            guard !isLoading else { return }
+            save(sleepTimeout, forKey: Key.sleepTimeout)
+            applyBehaviorSettings()
+        }
+    }
+
+    // MARK: - 시스템 설정
+
+    /// 로그인 시 자동 실행
+    var autoLaunch: Bool = Default.autoLaunch {
+        didSet {
+            guard !isLoading else { return }
+            save(autoLaunch, forKey: Key.autoLaunch)
+            applyAutoLaunch()
+        }
+    }
+
+    // MARK: - 계산 프로퍼티
+
+    /// 실제 스프라이트 배율 (0.5~2.0)
+    var spriteScaleMultiplier: CGFloat {
+        CGFloat(spriteScale / 100.0)
+    }
+
+    /// 실제 윈도우 불투명도 (0.3~1.0)
+    var windowOpacity: CGFloat {
+        CGFloat(opacity / 100.0)
+    }
+
+    /// Walk 속도 (px/frame)
+    var walkSpeedValue: CGFloat {
+        // 1단계=1.0, 2=1.5, 3=2.0(기본), 4=3.0, 5=4.0
+        switch movementSpeed {
+        case 1: return 1.0
+        case 2: return 1.5
+        case 3: return 2.0
+        case 4: return 3.0
+        case 5: return 4.0
+        default: return 2.0
+        }
+    }
+
+    /// Run 속도 (Walk의 2배)
+    var runSpeedValue: CGFloat {
+        walkSpeedValue * 2.0
+    }
+
+    /// Idle → Walk 전환 시간 범위 (초)
+    var idleToWalkRange: ClosedRange<Double> {
+        // 1(조용)=5~10, 2=3~7, 3=2~5(기본), 4=1~3, 5=0.5~2(활발)
+        switch activityFrequency {
+        case 1: return 5.0...10.0
+        case 2: return 3.0...7.0
+        case 3: return 2.0...5.0
+        case 4: return 1.0...3.0
+        case 5: return 0.5...2.0
+        default: return 2.0...5.0
+        }
+    }
+
+    /// Walk → Idle 전환 시간 범위 (초)
+    var walkToIdleRange: ClosedRange<Double> {
+        // 1(조용)=2~4, 2=2.5~6, 3=3~10(기본), 4=5~15, 5=8~20(활발)
+        switch activityFrequency {
+        case 1: return 2.0...4.0
+        case 2: return 2.5...6.0
+        case 3: return 3.0...10.0
+        case 4: return 5.0...15.0
+        case 5: return 8.0...20.0
+        default: return 3.0...10.0
+        }
+    }
+
+    /// 수면 타임아웃 (초)
+    var sleepTimeoutSeconds: Double {
+        Double(sleepTimeout) * 60.0
+    }
+
+    /// 이동 속도 표시 텍스트
+    var movementSpeedLabel: String {
+        switch movementSpeed {
+        case 1: return "매우 느림"
+        case 2: return "느림"
+        case 3: return "보통"
+        case 4: return "빠름"
+        case 5: return "매우 빠름"
+        default: return "보통"
+        }
+    }
+
+    /// 활동 빈도 표시 텍스트
+    var activityFrequencyLabel: String {
+        switch activityFrequency {
+        case 1: return "매우 조용"
+        case 2: return "조용함"
+        case 3: return "보통"
+        case 4: return "활발함"
+        case 5: return "매우 활발"
+        default: return "보통"
+        }
+    }
+
+    // MARK: - 데이터 영속성 (포켓몬 ID / 위치)
+
+    /// 저장된 포켓몬 ID (없으면 25 = 피카츄)
+    var savedPokemonID: Int {
+        get {
+            defaults.object(forKey: Key.currentPokemonID) != nil
+                ? defaults.integer(forKey: Key.currentPokemonID)
+                : 25
+        }
+        set {
+            defaults.set(newValue, forKey: Key.currentPokemonID)
+        }
+    }
+
+    /// 마지막 위치 저장
+    func saveLastPosition(_ position: CGPoint) {
+        defaults.set(position.x, forKey: Key.lastPositionX)
+        defaults.set(position.y, forKey: Key.lastPositionY)
+    }
+
+    /// 마지막 위치 로드 (저장된 적 없으면 nil)
+    func loadLastPosition() -> CGPoint? {
+        guard defaults.object(forKey: Key.lastPositionX) != nil else { return nil }
+        let x = defaults.double(forKey: Key.lastPositionX)
+        let y = defaults.double(forKey: Key.lastPositionY)
+        return CGPoint(x: x, y: y)
+    }
+
+    // MARK: - 초기화
+
+    private let defaults = UserDefaults.standard
+
+    init() {
+        loadFromDefaults()
+    }
+
+    // MARK: - 로드
+
+    private func loadFromDefaults() {
+        isLoading = true
+        defer { isLoading = false }
+
+        if defaults.object(forKey: Key.spriteScale) != nil {
+            spriteScale = defaults.double(forKey: Key.spriteScale)
+        }
+        if defaults.object(forKey: Key.opacity) != nil {
+            opacity = defaults.double(forKey: Key.opacity)
+        }
+        if defaults.object(forKey: Key.windowLevel) != nil {
+            let raw = defaults.integer(forKey: Key.windowLevel)
+            windowLevelOption = WindowLevelOption(rawValue: raw) ?? .alwaysOnTop
+        }
+        if defaults.object(forKey: Key.movementSpeed) != nil {
+            movementSpeed = defaults.integer(forKey: Key.movementSpeed)
+        }
+        if defaults.object(forKey: Key.activityFrequency) != nil {
+            activityFrequency = defaults.integer(forKey: Key.activityFrequency)
+        }
+        if defaults.object(forKey: Key.sleepTimeout) != nil {
+            sleepTimeout = defaults.integer(forKey: Key.sleepTimeout)
+        }
+        if defaults.object(forKey: Key.autoLaunch) != nil {
+            autoLaunch = defaults.bool(forKey: Key.autoLaunch)
+        }
+        if let saved = defaults.string(forKey: Key.restrictedMonitor), !saved.isEmpty {
+            restrictedMonitorName = saved
+        }
+        applyMonitorRestriction()
+    }
+
+    // MARK: - 저장
+
+    private func save(_ value: Any, forKey key: String) {
+        defaults.set(value, forKey: key)
+    }
+
+    // MARK: - 기본값 복원
+
+    func resetToDefaults() {
+        spriteScale = Default.spriteScale
+        opacity = Default.opacity
+        windowLevelOption = .alwaysOnTop
+        movementSpeed = Default.movementSpeed
+        activityFrequency = Default.activityFrequency
+        sleepTimeout = Default.sleepTimeout
+        autoLaunch = Default.autoLaunch
+        restrictedMonitorName = nil
+    }
+
+    // MARK: - 실시간 반영
+
+    /// PetStateMachine에 행동 설정 적용
+    /// - Parameter stateMachine: 대상 (nil이면 PetManager.shared.stateMachine)
+    func applyBehaviorSettings(to stateMachine: PetStateMachine? = nil) {
+        let sm = stateMachine ?? PetManager.shared.stateMachine
+        sm.walkSpeed = walkSpeedValue
+        sm.runSpeed = runSpeedValue
+        sm.idleToWalkRange = idleToWalkRange
+        sm.walkToIdleRange = walkToIdleRange
+        sm.sleepTimeout = sleepTimeoutSeconds
+    }
+
+    /// 모든 오버레이 윈도우에 투명도 적용
+    func applyOpacity() {
+        NotificationCenter.default.post(name: .settingsOpacityChanged, object: nil)
+    }
+
+    /// 모든 오버레이 윈도우에 level 적용
+    func applyWindowLevel() {
+        NotificationCenter.default.post(name: .settingsWindowLevelChanged, object: nil)
+    }
+
+    /// 모니터 제한 설정을 ScreenGeometry에 반영
+    func applyMonitorRestriction() {
+        ScreenGeometry.shared.restrictedScreenName = restrictedMonitorName
+    }
+
+    /// 연결된 모니터 목록 (UI용)
+    var availableMonitors: [(name: String, frame: CGRect)] {
+        let geo = ScreenGeometry.shared
+        return zip(geo.screenNames, geo.screenFrames).map { (name: $0, frame: $1) }
+    }
+
+    /// 로그인 시 자동 실행 설정
+    private func applyAutoLaunch() {
+        if #available(macOS 13.0, *) {
+            let service = SMAppService.mainApp
+            do {
+                if autoLaunch {
+                    try service.register()
+                } else {
+                    try service.unregister()
+                }
+            } catch {
+                print("[SettingsManager] 자동 실행 설정 실패: \(error)")
+            }
+        }
+    }
+}
+
+// MARK: - 설정 변경 알림
+
+extension Notification.Name {
+    static let settingsOpacityChanged = Notification.Name("settingsOpacityChanged")
+    static let settingsWindowLevelChanged = Notification.Name("settingsWindowLevelChanged")
+}
