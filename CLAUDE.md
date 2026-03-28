@@ -35,7 +35,7 @@ poketmon/
   Models/         — AnimDataParser, SpriteSheet, SpriteAnimator, PokemonDataManager
   Views/          — SwiftUI 뷰 (선택기, 설정 패널, 메뉴바 드롭다운)
   Services/       — SettingsManager
-  Core/           — PetManager, PetStateMachine, GameLoop
+  Core/           — PetManager, PetStateMachine, GameLoop, ScreenGeometry
   Resources/      — Sprites/{ID}/, pokemon_data.json
 ```
 
@@ -49,10 +49,12 @@ poketmon/
 - 화면 가장자리 반사 옵션 토글 제거 (항상 반사 — 포켓몬은 가장자리에서 반대 방향으로 전환)
 - 다른 윈도우 위에서만 이동 기능 제거 (Accessibility API 권한 부담)
 - Run 상태는 별도 모션 없이 Walk 애니메이션 속도 증가로 처리
+- 멀티 모니터: 모니터별 독립 윈도우 (per-screen windows) 방식. macOS가 단일 윈도우의 음수 origin을 강제 보정하므로 union 윈도우 불가
+- ScreenGeometry 싱글턴이 모든 모니터 좌표 관리 (unionFrame, dead zone 보정, randomTarget)
 
 ## 개발 계획
 8단계 순차 개발. 상세 내용은 plan.md 참고.
-현재: Phase 1 준비 중 (디렉토리 구조 생성 완료, mockup 고도화 진행 중)
+현재: Phase 3 완료, 멀티 모니터 지원 구현 완료 (Phase 8 Step 8-3 선행 구현)
 
 ## 참고 문서
 - plan.md — 전체 개발 계획 (Phase 1~8)

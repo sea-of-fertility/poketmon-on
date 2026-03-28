@@ -139,6 +139,18 @@ final class PetManager {
         }
     }
 
+    /// 드래그 시작 — Dragged 상태 전환 + Idle 프레임 고정
+    func startDrag() {
+        stateMachine.startDrag()
+        spriteAnimator.switchAnimation(to: .idle)
+    }
+
+    /// 드래그 종료 — Idle 복귀
+    func endDrag() {
+        stateMachine.endDrag()
+        spriteAnimator.switchAnimation(to: .idle)
+    }
+
     /// 클릭 반응
     func react() {
         let previousState = stateMachine.currentState
