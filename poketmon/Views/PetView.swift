@@ -29,9 +29,10 @@ final class PetView: NSView {
     /// 드래그 판정 임계값 (px) — 미세한 손떨림으로 드래그 오작동 방지
     private let dragThreshold: CGFloat = 3.0
 
-    /// 스프라이트 배율 — 원본 크기 × 이 값으로 렌더링
+    /// 스프라이트 배율 — 원본 크기 × 이 값으로 렌더링 (설정 배율 반영)
     private var spriteScale: CGFloat {
-        return ScreenGeometry.shared.primaryScreenHeight / 450.0
+        let baseScale = ScreenGeometry.shared.primaryScreenHeight / 450.0
+        return baseScale * PetManager.shared.settingsManager.spriteScaleMultiplier
     }
 
     /// 포켓몬 스프라이트 영역 (글로벌 좌표 → 이 윈도우의 로컬 좌표 변환)
@@ -273,7 +274,7 @@ final class PetView: NSView {
     }
 
     @objc private func menuOpenSettings() {
-        // Phase 7에서 설정 패널 열기
+        SettingsWindowController.shared.open()
     }
 
     @objc private func menuToggleSleep() {

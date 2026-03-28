@@ -56,9 +56,16 @@ poketmon/
 
 ## 개발 계획
 8단계 순차 개발. 상세 내용은 plan.md 참고.
-현재: Phase 4 완료, 멀티 모니터 지원 구현 완료 (Phase 8 Step 8-3 선행 구현)
+현재: Phase 6 완료, 멀티 모니터 지원 구현 완료 (Phase 8 Step 8-3 선행 구현)
 - Sprites 폴더: 프로젝트 루트 `./Sprites/`로 이동 (fileSystemSynchronizedGroups 충돌 방지)
-- 렌더링: Walk 프레임 크기 기준 동적 스케일 (renderScale)
+
+### 렌더링 스케일 방식
+- 각 포켓몬을 **원본 프레임 크기 × spriteScale** 비율로 렌더링 (비율 유지)
+- `spriteScale = 화면높이 / 450` (900pt 화면 → 2x 배율)
+- 큰 포켓몬은 크게, 작은 포켓몬은 작게 — 원본 크기 차이를 자연스럽게 반영
+- 모든 포켓몬을 동일 크기 정사각형에 맞추던 기존 방식에서 변경 (큰 포켓몬 이미지 뭉개짐 방지)
+- Walk 프레임 높이를 발(하단) 앵커 기준으로 사용
+- renderScale(Walk 대비 다른 애니메이션 비율)은 더 이상 사용하지 않음 — currentFrameSize를 직접 사용
 
 ## 참고 문서
 - plan.md — 전체 개발 계획 (Phase 1~8)

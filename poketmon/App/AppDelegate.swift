@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = PetManager.shared
         setupOverlayWindows()
         setupScreenChangeHandler()
+        setupSettingsObservers()
     }
 
     // MARK: - 모니터별 투명 윈도우 생성
@@ -50,10 +51,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 defer: false
             )
 
+            let settings = PetManager.shared.settingsManager
+
             window.backgroundColor = .clear
             window.isOpaque = false
             window.hasShadow = false
-            window.level = .floating
+            window.level = settings.windowLevelOption.windowLevel
+            window.alphaValue = settings.windowOpacity
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             window.hidesOnDeactivate = false
             window.ignoresMouseEvents = true
@@ -76,6 +80,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ScreenGeometry.shared.onScreenChange = { [weak self] in
             self?.setupOverlayWindows()
             PetManager.shared.relocateIfOffScreen()
+        }
+    }
+
+    // MARK: - 설정 변경 옵저버
+
+    private func setupSettingsObservers() {
+        let nc = NotificationCenter.default
+
+        nc.addObserver(forName: .settingsOpacityChanged, object: nil, queue: .main) { [weak self] _ in
+            let alpha = PetManager.shared.settingsManager.windowOpacity
+            self?.overlayWindows.forEach { $0.alphaValue = alpha }
+        }
+
+        nc.addObserver(forName: .settingsWindowLevelChanged, object: nil, queue: .main) { [weak self] _ in
+            let level = PetManager.shared.settingsManager.windowLevelOption.windowLevel
+            self?.overlayWindows.forEach { $0.level = level }
         }
     }
 }

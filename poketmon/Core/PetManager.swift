@@ -22,6 +22,7 @@ final class PetManager {
     let stateMachine = PetStateMachine()
     let gameLoop = GameLoop()
     let pokemonDataManager = PokemonDataManager()
+    let settingsManager = SettingsManager()
 
     // MARK: - 상태
 
@@ -34,6 +35,7 @@ final class PetManager {
     // MARK: - 초기화
 
     private init() {
+        settingsManager.applyBehaviorSettings(to: stateMachine)
         setupGameLoop()
         loadPokemon(id: 25)
     }
