@@ -73,27 +73,10 @@ final class PetManager {
         gameLoop.start()
     }
 
-    /// 디버그: 포켓몬이 어느 모니터 위에 있는지 추적
-    private var lastScreenIndex: Int = -1
-
     /// 매 프레임 호출
     private func tick() {
         let geo = ScreenGeometry.shared
         let screenBounds = geo.unionFrame
-        let pos = stateMachine.position
-
-        // 모니터 전환 감지
-        let currentScreenIndex = geo.screenFrames.firstIndex { $0.contains(pos) } ?? -1
-        if currentScreenIndex != lastScreenIndex {
-            print("[DEBUG] 모니터 전환: screen[\(lastScreenIndex)] → screen[\(currentScreenIndex)]")
-            print("[DEBUG]   위치: \(pos)")
-            print("[DEBUG]   unionFrame: \(screenBounds)")
-            print("[DEBUG]   screenFrames: \(geo.screenFrames)")
-            if currentScreenIndex == -1 {
-                print("[DEBUG]   ⚠️ 포켓몬이 어떤 모니터에도 속하지 않음!")
-            }
-            lastScreenIndex = currentScreenIndex
-        }
 
         // 상태 머신 업데이트 — 전환 필요 시 애니메이션 변경
         if let newAnim = stateMachine.update(screenBounds: screenBounds) {

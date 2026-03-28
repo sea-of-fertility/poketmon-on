@@ -34,14 +34,7 @@ final class ScreenGeometry {
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            let oldUnion = self.unionFrame
-            let oldCount = self.screenFrames.count
             self.recalculate()
-            print("[ScreenGeo] 모니터 변경 감지 — 모니터 수: \(oldCount) → \(self.screenFrames.count)")
-            print("[ScreenGeo] unionFrame: \(oldUnion) → \(self.unionFrame)")
-            for (i, frame) in self.screenFrames.enumerated() {
-                print("[ScreenGeo]   screen[\(i)]: \(frame)")
-            }
             self.onScreenChange?()
         }
     }
