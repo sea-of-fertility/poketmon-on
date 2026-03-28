@@ -3,35 +3,32 @@
 //  poketmon
 //
 //  투명 윈도우의 콘텐츠 뷰 — 포켓몬 스프라이트 렌더링 + 클릭 통과
-//  Phase 2: Anim + Shadow 프레임을 nearest-neighbor로 그리기
-//
-//  클릭 통과 방식: 기본 ignoresMouseEvents = true (다른 앱으로 클릭 통과)
-//  마우스가 포켓몬 위에 올라가면 false로 전환하여 이벤트 수신
+//  PetManager.shared에서 위치/프레임 정보를 가져와 렌더링
+//  각 모니터마다 독립 PetView가 존재하며, 포켓몬이 해당 모니터 위에 있을 때만 렌더링
 //
 
 import AppKit
 
 final class PetView: NSView {
 
-    // MARK: - 스프라이트 상태
+    /// 이 뷰가 담당하는 모니터의 글로벌 frame
+    var screenFrame: CGRect = .zero
 
-    private let animator = SpriteAnimator()
+    /// 드래그 중 여부 (드래그 중에는 ignoresMouseEvents 유지)
+    private var isDragging = false
 
-    /// 포켓몬 위치 (좌하단 기준 — macOS 좌표계)
-    private(set) var petPosition: CGPoint = .zero
-
-    /// 렌더링 크기 (화면 높이의 약 6%)
+    /// 렌더링 크기 (주 모니터 높이의 약 6%)
     private var renderSize: CGFloat {
-        guard let screen = NSScreen.main else { return 64 }
-        return screen.frame.height * 0.06
+        return ScreenGeometry.shared.primaryScreenHeight * 0.06
     }
 
-    /// 포켓몬 스프라이트 영역
+    /// 포켓몬 스프라이트 영역 (글로벌 좌표 → 이 윈도우의 로컬 좌표 변환)
     private var petRect: CGRect {
         let size = renderSize
+        let pos = PetManager.shared.stateMachine.position
         return CGRect(
-            x: petPosition.x - size / 2,
-            y: petPosition.y - size / 2,
+            x: (pos.x - screenFrame.origin.x) - size / 2,
+            y: (pos.y - screenFrame.origin.y) - size / 2,
             width: size,
             height: size
         )
@@ -41,26 +38,18 @@ final class PetView: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        setupPet()
+        setupRendering()
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-        setupPet()
+        setupRendering()
     }
 
-    private func setupPet() {
-        // 화면 중앙 하단 1/3 지점에 배치
-        petPosition = CGPoint(
-            x: bounds.midX,
-            y: bounds.height * 0.3
-        )
-
-        // 피카츄 로드 + Idle 애니메이션 시작
-        animator.load(pokemonID: 25)
-
-        // 기본: 클릭 통과 (다른 앱으로 이벤트 전달)
-        window?.ignoresMouseEvents = true
+    private func setupRendering() {
+        DispatchQueue.main.async { [weak self] in
+            self?.window?.ignoresMouseEvents = true
+        }
 
         // 30fps 뷰 갱신 + 마우스 위치 체크
         Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
@@ -71,39 +60,48 @@ final class PetView: NSView {
 
     // MARK: - 마우스 통과 제어
 
-    /// 마우스가 포켓몬 위에 있으면 이벤트 수신, 아니면 클릭 통과
     private func updateMousePassthrough() {
         guard let window = self.window else { return }
-
-        // 현재 마우스 위치 (스크린 좌표 → 윈도우 좌표)
+        let pos = PetManager.shared.stateMachine.position
+        // 포켓몬이 이 모니터 위에 없으면 항상 클릭 통과
+        guard screenFrame.contains(pos) else {
+            window.ignoresMouseEvents = true
+            return
+        }
         let screenLocation = NSEvent.mouseLocation
         let windowLocation = window.convertPoint(fromScreen: screenLocation)
-
         let isOverPet = petRect.contains(windowLocation)
-        window.ignoresMouseEvents = !isOverPet
+        window.ignoresMouseEvents = !isOverPet && !isDragging
     }
 
     // MARK: - 렌더링
 
     override func draw(_ dirtyRect: NSRect) {
-        // 투명 배경
         NSColor.clear.set()
         dirtyRect.fill()
 
+        let pos = PetManager.shared.stateMachine.position
+        let size = renderSize
+
+        // 포켓몬이 이 모니터 근처에 없으면 그리지 않음
+        let expandedFrame = screenFrame.insetBy(dx: -size, dy: -size)
+        guard expandedFrame.contains(pos) else { return }
+
         guard let context = NSGraphicsContext.current?.cgContext else { return }
+
+        let animator = PetManager.shared.spriteAnimator
+        let rect = petRect
 
         // nearest-neighbor 보간 (픽셀아트)
         context.interpolationQuality = .none
 
-        let size = renderSize
-        let rect = petRect
-
-        // Shadow 렌더링 (Anim 아래에)
+        // Shadow 렌더링
         if let shadow = animator.currentShadowFrame {
+            let shadowWidth = rect.width * 0.8
             let shadowRect = CGRect(
-                x: rect.midX - size * 0.35,
+                x: rect.midX - shadowWidth / 2,
                 y: rect.minY - size * 0.05,
-                width: size * 0.7,
+                width: shadowWidth,
                 height: size * 0.15
             )
             context.draw(shadow, in: shadowRect)
@@ -118,7 +116,16 @@ final class PetView: NSView {
     // MARK: - 마우스 이벤트
 
     override func mouseDown(with event: NSEvent) {
-        // super 호출 안 함 → makeKeyWindow 방지
         // Phase 4에서 클릭/드래그 인터랙션 구현 예정
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        isDragging = true
+        // Phase 4에서 드래그 이동 구현 예정
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        isDragging = false
+        // Phase 4에서 드래그 종료 처리 예정
     }
 }

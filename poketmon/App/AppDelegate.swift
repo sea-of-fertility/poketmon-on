@@ -3,59 +3,79 @@
 //  poketmon
 //
 //  투명 NSWindow 생성 및 관리
-//  Phase 2: borderless 투명 윈도우에 포켓몬 스프라이트 표시
+//  모니터별 독립 윈도우로 멀티 모니터 지원
 //
 
 import AppKit
 
 // MARK: - 투명 오버레이 전용 윈도우
 
-/// key/main window가 되지 않는 투명 윈도우
 private final class OverlayWindow: NSWindow {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
     override func makeKey() {}
     override func makeKeyAndOrderFront(_ sender: Any?) { orderFront(sender) }
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        return frameRect
+    }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
-    private var overlayWindow: NSWindow?
-    private var petView: PetView?
+    private var overlayWindows: [NSWindow] = []
+    private var petViews: [PetView] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        setupOverlayWindow()
-
-        // 앱 활성화 시 OverlayWindow가 key window가 되지 않도록 방지
         NSApp.setActivationPolicy(.accessory)
+        _ = PetManager.shared
+        setupOverlayWindows()
+        setupScreenChangeHandler()
     }
 
-    // MARK: - 투명 윈도우 설정
+    // MARK: - 모니터별 투명 윈도우 생성
 
-    private func setupOverlayWindow() {
-        guard let screen = NSScreen.main else { return }
+    private func setupOverlayWindows() {
+        // 기존 윈도우 정리
+        overlayWindows.forEach { $0.orderOut(nil) }
+        overlayWindows.removeAll()
+        petViews.removeAll()
 
-        // borderless 투명 윈도우 — 전체 화면 크기
-        let window = OverlayWindow(
-            contentRect: screen.frame,
-            styleMask: .borderless,
-            backing: .buffered,
-            defer: false
-        )
+        let geo = ScreenGeometry.shared
 
-        window.backgroundColor = .clear
-        window.isOpaque = false
-        window.hasShadow = false
-        window.level = .floating
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.ignoresMouseEvents = false
+        for screenFrame in geo.screenFrames {
+            let window = OverlayWindow(
+                contentRect: screenFrame,
+                styleMask: .borderless,
+                backing: .buffered,
+                defer: false
+            )
 
-        // 포켓몬 렌더링 뷰
-        let petView = PetView(frame: screen.frame)
-        window.contentView = petView
-        self.petView = petView
+            window.backgroundColor = .clear
+            window.isOpaque = false
+            window.hasShadow = false
+            window.level = .floating
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            window.hidesOnDeactivate = false
+            window.ignoresMouseEvents = true
 
-        window.orderFront(nil)
-        overlayWindow = window
+            let viewFrame = CGRect(origin: .zero, size: screenFrame.size)
+            let petView = PetView(frame: viewFrame)
+            petView.screenFrame = screenFrame
+            window.contentView = petView
+
+            window.orderFront(nil)
+
+            overlayWindows.append(window)
+            petViews.append(petView)
+        }
+    }
+
+    // MARK: - 모니터 변경 감지
+
+    private func setupScreenChangeHandler() {
+        ScreenGeometry.shared.onScreenChange = { [weak self] in
+            self?.setupOverlayWindows()
+            PetManager.shared.relocateIfOffScreen()
+        }
     }
 }

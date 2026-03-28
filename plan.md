@@ -315,9 +315,14 @@ UserDefaults 저장 & 실시간 반영.
 - 불필요 시 타이머 정지 (Sleep 상태에서 이동 타이머 불필요)
 - 메모리 프로파일링으로 누수 확인
 
-### Step 8-3. 엣지 케이스 처리
-- 모니터 해상도 변경 / 외부 모니터 연결·해제 시 윈도우 크기 재조정
-- 포켓몬이 화면 밖으로 나간 경우 복구 로직
+### Step 8-3. 멀티 모니터 지원 & 엣지 케이스 처리
+
+> **방식**: 모든 모니터를 합친 union rect 크기의 단일 윈도우. 기존 코드가 screenBounds 파라미터 기반이므로 변경 최소.
+
+- **윈도우 크기 확장**: AppDelegate의 `NSScreen.main.frame` → `NSScreen.screens`의 union rect로 변경. 윈도우가 모든 모니터를 덮음
+- **이동 범위 확장**: PetManager의 게임 루프에서 전달하는 `screenBounds`를 union rect로 변경. PetStateMachine의 이동/경계 반사 로직은 변경 불필요 (이미 CGRect 파라미터 기반)
+- **모니터 변경 감지**: `NSApplication.didChangeScreenParametersNotification` 옵저버 등록. 모니터 연결/해제/해상도 변경 시 윈도우 frame + screenBounds 재계산
+- 포켓몬이 화면 밖으로 나간 경우 복구 로직 (가장 가까운 모니터 중앙으로 이동)
 - 스프라이트 파일 누락 시 graceful fallback
 
 ### Step 8-4. 포켓몬 교체 전환 효과
