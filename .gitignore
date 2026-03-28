@@ -1,0 +1,6 @@
+# 바이너리 에셋 (다운로드 스크립트로 재현)
+Sprites/
+poketmon/Resources/Portraits/
+
+# Xcode 개인 설정
+xcuserdata/
