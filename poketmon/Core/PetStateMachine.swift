@@ -167,7 +167,7 @@ final class PetStateMachine {
 
     /// 강제 Run (10초 후 Walk 복귀)
     func run() {
-        if currentState != .dragged && currentState != .sleep {
+        if currentState != .dragged {
             transition(to: .run)
             targetPoint = targetPoint ?? ScreenGeometry.shared.randomTarget(margin: 40)
             updateDirection()
