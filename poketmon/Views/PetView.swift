@@ -29,25 +29,28 @@ final class PetView: NSView {
     /// 드래그 판정 임계값 (px) — 미세한 손떨림으로 드래그 오작동 방지
     private let dragThreshold: CGFloat = 3.0
 
-    /// 렌더링 크기 (주 모니터 높이의 약 6%)
-    private var renderSize: CGFloat {
-        return ScreenGeometry.shared.primaryScreenHeight * 0.06
+    /// 스프라이트 배율 — 원본 크기 × 이 값으로 렌더링
+    private var spriteScale: CGFloat {
+        return ScreenGeometry.shared.primaryScreenHeight / 450.0
     }
 
     /// 포켓몬 스프라이트 영역 (글로벌 좌표 → 이 윈도우의 로컬 좌표 변환)
-    /// Walk 크기를 기준으로, 더 큰 애니메이션은 비율만큼 확대. 하단(발) 고정.
+    /// 원본 프레임 크기 × spriteScale로 렌더링. 하단(발) 고정.
     private var petRect: CGRect {
-        let baseSize = renderSize
-        let scale = PetManager.shared.spriteAnimator.renderScale
-        let scaledSize = baseSize * scale
+        let animator = PetManager.shared.spriteAnimator
+        let frameSize = animator.currentFrameSize
+        let scale = spriteScale
+        let w = frameSize.width * scale
+        let h = frameSize.height * scale
+        let walkH = animator.walkFrameSize.height * scale
         let pos = PetManager.shared.stateMachine.position
         let localX = pos.x - screenFrame.origin.x
         let localY = pos.y - screenFrame.origin.y
         return CGRect(
-            x: localX - scaledSize / 2,
-            y: localY - baseSize / 2,
-            width: scaledSize,
-            height: scaledSize
+            x: localX - w / 2,
+            y: localY - walkH / 2,
+            width: w,
+            height: h
         )
     }
 
@@ -98,30 +101,33 @@ final class PetView: NSView {
         dirtyRect.fill()
 
         let pos = PetManager.shared.stateMachine.position
-        let baseSize = renderSize
-        let scaledSize = baseSize * PetManager.shared.spriteAnimator.renderScale
+        let animator = PetManager.shared.spriteAnimator
+        let scale = spriteScale
+        let walkSize = animator.walkFrameSize
+        let walkH = walkSize.height * scale
+        let walkW = walkSize.width * scale
 
         // 포켓몬이 이 모니터 근처에 없으면 그리지 않음
-        let expandedFrame = screenFrame.insetBy(dx: -scaledSize, dy: -scaledSize)
+        let margin = max(walkW, walkH) * 1.5
+        let expandedFrame = screenFrame.insetBy(dx: -margin, dy: -margin)
         guard expandedFrame.contains(pos) else { return }
 
         guard let context = NSGraphicsContext.current?.cgContext else { return }
 
-        let animator = PetManager.shared.spriteAnimator
         let rect = petRect
 
         // nearest-neighbor 보간 (픽셀아트)
         context.interpolationQuality = .none
 
-        // Shadow 렌더링 — Walk 기준 크기로 고정 (애니메이션 크기와 무관)
+        // Shadow 렌더링 — Walk 기준 크기로 고정
         if let shadow = animator.currentShadowFrame,
            let alphaOnly = shadow.copy(colorSpace: CGColorSpaceCreateDeviceGray()) {
-            let shadowWidth = baseSize * 0.8
+            let shadowWidth = walkW * 0.8
             let shadowRect = CGRect(
                 x: rect.midX - shadowWidth / 2,
-                y: rect.minY - baseSize * 0.05,
+                y: rect.minY - walkH * 0.05,
                 width: shadowWidth,
-                height: baseSize * 0.15
+                height: walkH * 0.15
             )
             context.saveGState()
             context.clip(to: shadowRect, mask: alphaOnly)
