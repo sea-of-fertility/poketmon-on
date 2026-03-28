@@ -32,12 +32,26 @@ final class PetManager {
     /// 일시정지 여부
     private(set) var isPaused = false
 
+    /// 위치 저장 쓰로틀링용 타이머
+    private var lastPositionSaveTime: Date = Date()
+
     // MARK: - 초기화
 
     private init() {
         settingsManager.applyBehaviorSettings(to: stateMachine)
         setupGameLoop()
-        loadPokemon(id: 25)
+
+        // 저장된 포켓몬 로드 (없으면 기본 25 = 피카츄)
+        let savedID = settingsManager.savedPokemonID
+        loadPokemon(id: savedID)
+
+        // 저장된 위치 복원 (화면 내 유효한 경우만)
+        if let savedPosition = settingsManager.loadLastPosition() {
+            let geo = ScreenGeometry.shared
+            if geo.isOnScreen(savedPosition, margin: 20) {
+                stateMachine.position = savedPosition
+            }
+        }
     }
 
     // MARK: - 포켓몬 로드
@@ -60,6 +74,7 @@ final class PetManager {
     func changePokemon(to id: Int) {
         guard id != currentPokemonID else { return }
         currentPokemonID = id
+        settingsManager.savedPokemonID = id
         spriteAnimator.load(pokemonID: id)
         stateMachine.resetToIdle()
     }
@@ -88,6 +103,19 @@ final class PetManager {
 
         // 방향 동기화
         spriteAnimator.setDirection(stateMachine.currentDirection)
+
+        // 30초마다 위치 저장 (강제 종료 대비)
+        if Date().timeIntervalSince(lastPositionSaveTime) >= 30 {
+            savePosition()
+        }
+    }
+
+    // MARK: - 위치 저장
+
+    /// 현재 위치를 UserDefaults에 저장
+    func savePosition() {
+        settingsManager.saveLastPosition(stateMachine.position)
+        lastPositionSaveTime = Date()
     }
 
     // MARK: - 외부 제어
@@ -158,6 +186,8 @@ final class PetManager {
         default:
             spriteAnimator.switchAnimation(to: .idle)
         }
+        // 드래그로 이동한 위치 즉시 저장
+        savePosition()
     }
 
     /// 클릭 반응

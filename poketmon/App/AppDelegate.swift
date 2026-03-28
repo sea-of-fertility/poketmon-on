@@ -25,6 +25,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var overlayWindows: [NSWindow] = []
     private var petViews: [PetView] = []
 
+    func applicationWillTerminate(_ notification: Notification) {
+        PetManager.shared.savePosition()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         _ = PetManager.shared
