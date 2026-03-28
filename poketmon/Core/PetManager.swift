@@ -35,6 +35,9 @@ final class PetManager {
     /// 위치 저장 쓰로틀링용 타이머
     private var lastPositionSaveTime: Date = Date()
 
+    /// Sleep 상태에서 게임 루프 정지 여부 (유저 일시정지와 독립)
+    private var isGameLoopPausedForSleep = false
+
     // MARK: - 초기화
 
     private init() {
@@ -73,6 +76,7 @@ final class PetManager {
     /// 포켓몬 교체 (현재 위치 유지, 선택기에서 호출)
     func changePokemon(to id: Int) {
         guard id != currentPokemonID else { return }
+        resumeGameLoopFromSleep()
         currentPokemonID = id
         settingsManager.savedPokemonID = id
         spriteAnimator.load(pokemonID: id)
@@ -99,6 +103,12 @@ final class PetManager {
 
             // Run 상태면 속도 배율 1.5, 아니면 1.0
             spriteAnimator.speedMultiplier = (stateMachine.currentState == .run) ? 1.5 : 1.0
+
+            // 자동 수면 전환 시 게임 루프 정지 (이동 불필요)
+            if stateMachine.currentState == .sleep {
+                pauseGameLoopForSleep()
+                return
+            }
         }
 
         // 방향 동기화
@@ -118,6 +128,24 @@ final class PetManager {
         lastPositionSaveTime = Date()
     }
 
+    // MARK: - Sleep 시 게임 루프 제어
+
+    /// Sleep 진입 시 게임 루프 정지 + 위치 저장
+    private func pauseGameLoopForSleep() {
+        isGameLoopPausedForSleep = true
+        gameLoop.pause()
+        savePosition()
+    }
+
+    /// Sleep 탈출 시 게임 루프 재개 (유저 일시정지 상태면 재개하지 않음)
+    private func resumeGameLoopFromSleep() {
+        guard isGameLoopPausedForSleep else { return }
+        isGameLoopPausedForSleep = false
+        if !isPaused {
+            gameLoop.resume()
+        }
+    }
+
     // MARK: - 외부 제어
 
     /// 일시정지 토글
@@ -127,7 +155,10 @@ final class PetManager {
             gameLoop.pause()
             spriteAnimator.pause()
         } else {
-            gameLoop.resume()
+            // Sleep으로 게임 루프가 정지된 상태면 재개하지 않음
+            if !isGameLoopPausedForSleep {
+                gameLoop.resume()
+            }
             spriteAnimator.resume()
         }
     }
@@ -136,16 +167,19 @@ final class PetManager {
     func sleep() {
         stateMachine.sleep()
         spriteAnimator.switchAnimation(to: .sleep)
+        pauseGameLoopForSleep()
     }
 
     /// 깨우기
     func wake() {
         stateMachine.wake()
         spriteAnimator.switchAnimation(to: .idle)
+        resumeGameLoopFromSleep()
     }
 
     /// 강제 Run (10초)
     func run() {
+        resumeGameLoopFromSleep()
         stateMachine.run()
         spriteAnimator.switchAnimation(to: .walk)
         spriteAnimator.speedMultiplier = 1.5
@@ -180,14 +214,16 @@ final class PetManager {
         switch restored {
         case .sleep:
             spriteAnimator.switchAnimation(to: .sleep)
+            savePosition()
+            pauseGameLoopForSleep()
         case .walk, .run:
             spriteAnimator.switchAnimation(to: .walk)
             spriteAnimator.speedMultiplier = (restored == .run) ? 1.5 : 1.0
+            savePosition()
         default:
             spriteAnimator.switchAnimation(to: .idle)
+            savePosition()
         }
-        // 드래그로 이동한 위치 즉시 저장
-        savePosition()
     }
 
     /// 클릭 반응
@@ -196,6 +232,7 @@ final class PetManager {
         stateMachine.react()
 
         if previousState == .sleep {
+            resumeGameLoopFromSleep()
             spriteAnimator.switchAnimation(to: .idle)
         } else if stateMachine.currentState == .reaction {
             // 사용 가능한 Reaction 애니메이션 중 랜덤 선택
