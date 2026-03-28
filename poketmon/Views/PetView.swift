@@ -242,9 +242,10 @@ final class PetView: NSView {
         sleepItem.target = self
         menu.addItem(sleepItem)
 
-        // 뛰게 하기
-        let runItem = NSMenuItem(title: "뛰게 하기",
-                                 action: #selector(menuMakeRun), keyEquivalent: "")
+        // 뛰게 하기 / 걷게 하기
+        let isRunning = pet.stateMachine.currentState == .run
+        let runItem = NSMenuItem(title: isRunning ? "걷게 하기" : "뛰게 하기",
+                                 action: #selector(menuToggleRun), keyEquivalent: "")
         runItem.target = self
         menu.addItem(runItem)
 
@@ -278,8 +279,13 @@ final class PetView: NSView {
         }
     }
 
-    @objc private func menuMakeRun() {
-        PetManager.shared.run()
+    @objc private func menuToggleRun() {
+        let pet = PetManager.shared
+        if pet.stateMachine.currentState == .run {
+            pet.walk()
+        } else {
+            pet.run()
+        }
     }
 
     @objc private func menuQuit() {

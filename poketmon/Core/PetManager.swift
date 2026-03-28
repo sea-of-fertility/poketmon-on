@@ -138,6 +138,13 @@ final class PetManager {
         spriteAnimator.speedMultiplier = 1.5
     }
 
+    /// Run → Walk 전환 (달리기 취소)
+    func walk() {
+        guard stateMachine.currentState == .run else { return }
+        stateMachine.transition(to: .walk)
+        spriteAnimator.speedMultiplier = 1.0
+    }
+
     /// 모니터 해제 시 포켓몬이 화면 밖에 있으면 가장 가까운 모니터로 이동
     func relocateIfOffScreen() {
         let geo = ScreenGeometry.shared
