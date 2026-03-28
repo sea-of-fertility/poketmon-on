@@ -79,7 +79,7 @@ final class PetManager {
         resumeGameLoopFromSleep()
         currentPokemonID = id
         settingsManager.savedPokemonID = id
-        spriteAnimator.load(pokemonID: id)
+        spriteAnimator.loadWithTransition(pokemonID: id)
         stateMachine.resetToIdle()
     }
 

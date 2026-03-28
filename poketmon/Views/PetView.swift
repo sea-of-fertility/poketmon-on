@@ -74,6 +74,8 @@ final class PetView: NSView {
 
         // 30fps 뷰 갱신 + 마우스 위치 체크
         Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+            // 전환 진행도 업데이트 (draw 밖에서 처리 — @Observable 변경이 display 루프 유발 방지)
+            PetManager.shared.spriteAnimator.updateTransition()
             self?.needsDisplay = true
             self?.updateMousePassthrough()
         }
@@ -104,6 +106,7 @@ final class PetView: NSView {
         let pos = PetManager.shared.stateMachine.position
         let animator = PetManager.shared.spriteAnimator
         let scale = spriteScale
+
         let walkSize = animator.walkFrameSize
         let walkH = walkSize.height * scale
         let walkW = walkSize.width * scale
@@ -114,14 +117,40 @@ final class PetView: NSView {
         guard expandedFrame.contains(pos) else { return }
 
         guard let context = NSGraphicsContext.current?.cgContext else { return }
-
-        let rect = petRect
-
-        // nearest-neighbor 보간 (픽셀아트)
         context.interpolationQuality = .none
 
-        // Shadow 렌더링 — Walk 기준 크기로 고정
-        if let shadow = animator.currentShadowFrame,
+        // 전환 중: 이전 프레임 페이드 아웃
+        if animator.isTransitioning, let prevFrame = animator.previousFrame {
+            let prevSize = animator.previousFrameSize
+            let prevWalkH = animator.previousWalkFrameSize.height * scale
+            let prevWalkW = animator.previousWalkFrameSize.width * scale
+            let pw = prevSize.width * scale
+            let ph = prevSize.height * scale
+            let localX = pos.x - screenFrame.origin.x
+            let localY = pos.y - screenFrame.origin.y
+            let prevRect = CGRect(
+                x: localX - pw / 2,
+                y: localY - prevWalkH / 2,
+                width: pw, height: ph
+            )
+            drawSprite(context: context, frame: prevFrame, shadow: animator.previousShadowFrame,
+                       rect: prevRect, walkW: prevWalkW, walkH: prevWalkH,
+                       alpha: 1.0 - animator.transitionProgress)
+        }
+
+        // 현재 프레임 렌더링
+        let currentAlpha = animator.isTransitioning ? animator.transitionProgress : 1.0
+        drawSprite(context: context, frame: animator.currentFrame, shadow: animator.currentShadowFrame,
+                   rect: petRect, walkW: walkW, walkH: walkH, alpha: currentAlpha)
+    }
+
+    /// 스프라이트 + 그림자 렌더링 (알파 적용)
+    private func drawSprite(
+        context: CGContext, frame: CGImage?, shadow: CGImage?,
+        rect: CGRect, walkW: CGFloat, walkH: CGFloat, alpha: CGFloat
+    ) {
+        // Shadow
+        if let shadow = shadow,
            let alphaOnly = shadow.copy(colorSpace: CGColorSpaceCreateDeviceGray()) {
             let shadowWidth = walkW * 0.8
             let shadowRect = CGRect(
@@ -132,13 +161,19 @@ final class PetView: NSView {
             )
             context.saveGState()
             context.clip(to: shadowRect, mask: alphaOnly)
-            context.setFillColor(CGColor(gray: 0, alpha: 0.25))
+            context.setFillColor(CGColor(gray: 0, alpha: 0.25 * alpha))
             context.fill(shadowRect)
             context.restoreGState()
         }
 
-        // Anim 렌더링
-        if let frame = animator.currentFrame {
+        // Anim
+        guard let frame = frame else { return }
+        if alpha < 1.0 {
+            context.saveGState()
+            context.setAlpha(alpha)
+            context.draw(frame, in: rect)
+            context.restoreGState()
+        } else {
             context.draw(frame, in: rect)
         }
     }

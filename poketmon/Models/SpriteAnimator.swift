@@ -93,6 +93,57 @@ final class SpriteAnimator {
     private var isOneShot = false
     private var oneShotCompletion: (() -> Void)?
 
+    // MARK: - 전환 효과
+
+    /// 이전 프레임 (전환 중 페이드 아웃용)
+    @ObservationIgnored private(set) var previousFrame: CGImage?
+    @ObservationIgnored private(set) var previousShadowFrame: CGImage?
+    @ObservationIgnored private(set) var previousFrameSize: CGSize = .zero
+    @ObservationIgnored private(set) var previousWalkFrameSize: CGSize = .zero
+
+    /// 전환 진행도 (0.0 → 1.0)
+    @ObservationIgnored private(set) var transitionProgress: CGFloat = 1.0
+
+    /// 전환 중 여부
+    var isTransitioning: Bool { transitionProgress < 1.0 }
+
+    /// 전환 시작 시각
+    @ObservationIgnored private var transitionStartTime: Date?
+
+    /// 전환 지속 시간 (초)
+    private let transitionDuration: TimeInterval = 0.3
+
+    /// 전환 효과와 함께 포켓몬 로드
+    func loadWithTransition(pokemonID: Int) {
+        // 이전 프레임 캡처
+        previousFrame = currentFrame
+        previousShadowFrame = currentShadowFrame
+        previousFrameSize = currentFrameSize
+        previousWalkFrameSize = walkFrameSize
+
+        // 새 포켓몬 로드
+        load(pokemonID: pokemonID)
+
+        // 전환 시작
+        transitionProgress = 0.0
+        transitionStartTime = Date()
+    }
+
+    /// 전환 진행도 업데이트 (매 프레임 호출)
+    func updateTransition() {
+        guard let startTime = transitionStartTime else { return }
+        let elapsed = Date().timeIntervalSince(startTime)
+        transitionProgress = min(CGFloat(elapsed / transitionDuration), 1.0)
+
+        if transitionProgress >= 1.0 {
+            previousFrame = nil
+            previousShadowFrame = nil
+            previousFrameSize = .zero
+            previousWalkFrameSize = .zero
+            transitionStartTime = nil
+        }
+    }
+
     // MARK: - 포켓몬 로드
 
     /// 포켓몬 ID로 모든 애니메이션 로드
