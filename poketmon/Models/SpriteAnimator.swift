@@ -53,6 +53,20 @@ final class SpriteAnimator {
         return CGSize(width: loaded.animData.frameWidth, height: loaded.animData.frameHeight)
     }
 
+    /// Walk 애니메이션의 프레임 크기 (렌더링 기준선)
+    var walkFrameSize: CGSize {
+        guard let loaded = loadedAnimations[.walk] else { return currentFrameSize }
+        return CGSize(width: loaded.animData.frameWidth, height: loaded.animData.frameHeight)
+    }
+
+    /// Walk 대비 현재 애니메이션의 렌더링 스케일 (최소 1.0 — Walk보다 작으면 Walk 크기 유지)
+    var renderScale: CGFloat {
+        let walk = walkFrameSize
+        let current = currentFrameSize
+        guard walk.width > 0, walk.height > 0 else { return 1.0 }
+        return max(1.0, max(current.width / walk.width, current.height / walk.height))
+    }
+
     /// 프레임 재생 속도 배율 (Run 상태: 1.5)
     var speedMultiplier: Double = 1.0 {
         didSet {

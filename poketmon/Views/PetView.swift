@@ -35,14 +35,19 @@ final class PetView: NSView {
     }
 
     /// 포켓몬 스프라이트 영역 (글로벌 좌표 → 이 윈도우의 로컬 좌표 변환)
+    /// Walk 크기를 기준으로, 더 큰 애니메이션은 비율만큼 확대. 하단(발) 고정.
     private var petRect: CGRect {
-        let size = renderSize
+        let baseSize = renderSize
+        let scale = PetManager.shared.spriteAnimator.renderScale
+        let scaledSize = baseSize * scale
         let pos = PetManager.shared.stateMachine.position
+        let localX = pos.x - screenFrame.origin.x
+        let localY = pos.y - screenFrame.origin.y
         return CGRect(
-            x: (pos.x - screenFrame.origin.x) - size / 2,
-            y: (pos.y - screenFrame.origin.y) - size / 2,
-            width: size,
-            height: size
+            x: localX - scaledSize / 2,
+            y: localY - baseSize / 2,
+            width: scaledSize,
+            height: scaledSize
         )
     }
 
@@ -93,10 +98,11 @@ final class PetView: NSView {
         dirtyRect.fill()
 
         let pos = PetManager.shared.stateMachine.position
-        let size = renderSize
+        let baseSize = renderSize
+        let scaledSize = baseSize * PetManager.shared.spriteAnimator.renderScale
 
         // 포켓몬이 이 모니터 근처에 없으면 그리지 않음
-        let expandedFrame = screenFrame.insetBy(dx: -size, dy: -size)
+        let expandedFrame = screenFrame.insetBy(dx: -scaledSize, dy: -scaledSize)
         guard expandedFrame.contains(pos) else { return }
 
         guard let context = NSGraphicsContext.current?.cgContext else { return }
@@ -107,15 +113,15 @@ final class PetView: NSView {
         // nearest-neighbor 보간 (픽셀아트)
         context.interpolationQuality = .none
 
-        // Shadow 렌더링 — 알파 채널만 추출하여 검은색 반투명으로 표시
+        // Shadow 렌더링 — Walk 기준 크기로 고정 (애니메이션 크기와 무관)
         if let shadow = animator.currentShadowFrame,
            let alphaOnly = shadow.copy(colorSpace: CGColorSpaceCreateDeviceGray()) {
-            let shadowWidth = rect.width * 0.8
+            let shadowWidth = baseSize * 0.8
             let shadowRect = CGRect(
                 x: rect.midX - shadowWidth / 2,
-                y: rect.minY - size * 0.05,
+                y: rect.minY - baseSize * 0.05,
                 width: shadowWidth,
-                height: size * 0.15
+                height: baseSize * 0.15
             )
             context.saveGState()
             context.clip(to: shadowRect, mask: alphaOnly)

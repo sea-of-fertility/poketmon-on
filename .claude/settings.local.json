@@ -15,7 +15,8 @@
       "Bash(grep -E \"\\\\.\\(swift|json|png|jpg|gif|sh\\)$\")",
       "Bash(find /Users/hyungjunpark/dev/poketmon -name \"*.swift\" -exec wc -l {} +)",
       "Bash(xcodebuild -project poketmon.xcodeproj -scheme poketmon -configuration Debug build)",
-      "Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project /Users/springsnow/IdeaProjects/okestro/poketmon-on/poketmon.xcodeproj -scheme poketmon -configuration Debug clean build)"
+      "Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project /Users/springsnow/IdeaProjects/okestro/poketmon-on/poketmon.xcodeproj -scheme poketmon -configuration Debug clean build)",
+      "Bash(DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild -project /Users/springsnow/IdeaProjects/okestro/poketmon-on/poketmon.xcodeproj -scheme poketmon -configuration Debug build)"
     ]
   }
 }
