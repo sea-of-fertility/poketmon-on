@@ -6,7 +6,7 @@
 
 BASE_URL="https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite"
 PORTRAIT_URL="https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait"
-SPRITE_DIR="./poketmon/Resources/Sprites"
+SPRITE_DIR="./Sprites"
 PORTRAIT_DIR="./poketmon/Resources/Portraits"
 mkdir -p "$SPRITE_DIR" "$PORTRAIT_DIR"
 
