@@ -206,7 +206,83 @@ final class PetView: NSView {
     }
 
     override func rightMouseDown(with event: NSEvent) {
-        // Phase 5에서 컨텍스트 메뉴 구현 예정
-        print("[Phase 5] 우클릭 컨텍스트 메뉴")
+        let pet = PetManager.shared
+        let data = pet.pokemonDataManager.pokemon(id: pet.currentPokemonID)
+        let isSleeping = pet.stateMachine.currentState == .sleep
+
+        let menu = NSMenu()
+
+        // 헤더 (비활성)
+        let header = NSMenuItem(
+            title: "\(data?.name ?? "???") \(data?.displayNumber ?? "")",
+            action: nil, keyEquivalent: ""
+        )
+        header.isEnabled = false
+        menu.addItem(header)
+
+        menu.addItem(.separator())
+
+        // 포켓몬 변경
+        let changeItem = NSMenuItem(title: "포켓몬 변경...",
+                                    action: #selector(menuChangePokemon), keyEquivalent: "")
+        changeItem.target = self
+        menu.addItem(changeItem)
+
+        // 설정
+        let settingsItem = NSMenuItem(title: "설정...",
+                                      action: #selector(menuOpenSettings), keyEquivalent: "")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        menu.addItem(.separator())
+
+        // 재우기 / 깨우기
+        let sleepItem = NSMenuItem(title: isSleeping ? "깨우기" : "재우기",
+                                   action: #selector(menuToggleSleep), keyEquivalent: "")
+        sleepItem.target = self
+        menu.addItem(sleepItem)
+
+        // 뛰게 하기
+        let runItem = NSMenuItem(title: "뛰게 하기",
+                                 action: #selector(menuMakeRun), keyEquivalent: "")
+        runItem.target = self
+        menu.addItem(runItem)
+
+        menu.addItem(.separator())
+
+        // 종료
+        let quitItem = NSMenuItem(title: "종료",
+                                  action: #selector(menuQuit), keyEquivalent: "")
+        quitItem.target = self
+        menu.addItem(quitItem)
+
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
+    }
+
+    // MARK: - 컨텍스트 메뉴 액션
+
+    @objc private func menuChangePokemon() {
+        // Phase 6에서 선택기 윈도우 열기
+    }
+
+    @objc private func menuOpenSettings() {
+        // Phase 7에서 설정 패널 열기
+    }
+
+    @objc private func menuToggleSleep() {
+        let pet = PetManager.shared
+        if pet.stateMachine.currentState == .sleep {
+            pet.wake()
+        } else {
+            pet.sleep()
+        }
+    }
+
+    @objc private func menuMakeRun() {
+        PetManager.shared.run()
+    }
+
+    @objc private func menuQuit() {
+        NSApplication.shared.terminate(nil)
     }
 }

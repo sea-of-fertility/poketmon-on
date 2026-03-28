@@ -30,13 +30,15 @@ SwiftUI/AppKit 어디서든 PetManager.shared로 모든 컴포넌트 접근.
 
 ## 프로젝트 구조
 ```
+Sprites/          — 스프라이트 폴더 (프로젝트 루트, 폴더 레퍼런스로 번들에 포함)
+  {ID}/           — 포켓몬별 스프라이트 (AnimData.xml + Anim/Shadow PNG)
 poketmon/
   App/            — 앱 진입점 (AppDelegate)
   Models/         — AnimDataParser, SpriteSheet, SpriteAnimator, PokemonDataManager
   Views/          — SwiftUI 뷰 (선택기, 설정 패널, 메뉴바 드롭다운)
   Services/       — SettingsManager
   Core/           — PetManager, PetStateMachine, GameLoop, ScreenGeometry
-  Resources/      — Sprites/{ID}/, pokemon_data.json
+  Resources/      — pokemon_data.json, Portraits/
 ```
 
 ## 스프라이트 시스템
@@ -54,7 +56,9 @@ poketmon/
 
 ## 개발 계획
 8단계 순차 개발. 상세 내용은 plan.md 참고.
-현재: Phase 3 완료, 멀티 모니터 지원 구현 완료 (Phase 8 Step 8-3 선행 구현)
+현재: Phase 4 완료, 멀티 모니터 지원 구현 완료 (Phase 8 Step 8-3 선행 구현)
+- Sprites 폴더: 프로젝트 루트 `./Sprites/`로 이동 (fileSystemSynchronizedGroups 충돌 방지)
+- 렌더링: Walk 프레임 크기 기준 동적 스케일 (renderScale)
 
 ## 참고 문서
 - plan.md — 전체 개발 계획 (Phase 1~8)
