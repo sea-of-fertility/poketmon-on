@@ -68,6 +68,9 @@ final class PetStateMachine {
     /// 랜덤 목표점
     private(set) var targetPoint: CGPoint? = nil
 
+    /// 드래그 진입 전 상태 (드래그 종료 시 복원용)
+    private var stateBeforeDrag: PetState = .idle
+
     // MARK: - 상태 전환
 
     /// 상태를 변경하고 진입 시각 갱신
@@ -174,14 +177,15 @@ final class PetStateMachine {
         }
     }
 
-    /// 드래그 시작
+    /// 드래그 시작 — 현재 상태를 기억
     func startDrag() {
+        stateBeforeDrag = currentState
         transition(to: .dragged)
     }
 
-    /// 드래그 종료 → Idle
+    /// 드래그 종료 → 드래그 전 상태로 복원
     func endDrag() {
-        transition(to: .idle)
+        transition(to: stateBeforeDrag)
     }
 
     /// Reaction 완료 → Idle

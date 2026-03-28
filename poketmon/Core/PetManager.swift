@@ -162,10 +162,19 @@ final class PetManager {
         spriteAnimator.switchAnimation(to: .idle)
     }
 
-    /// 드래그 종료 — Idle 복귀
+    /// 드래그 종료 — 드래그 전 상태로 복원
     func endDrag() {
         stateMachine.endDrag()
-        spriteAnimator.switchAnimation(to: .idle)
+        let restored = stateMachine.currentState
+        switch restored {
+        case .sleep:
+            spriteAnimator.switchAnimation(to: .sleep)
+        case .walk, .run:
+            spriteAnimator.switchAnimation(to: .walk)
+            spriteAnimator.speedMultiplier = (restored == .run) ? 1.5 : 1.0
+        default:
+            spriteAnimator.switchAnimation(to: .idle)
+        }
     }
 
     /// 클릭 반응
