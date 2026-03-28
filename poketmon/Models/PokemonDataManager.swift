@@ -127,10 +127,10 @@ final class PokemonDataManager {
     /// Portrait 이미지 번들 URL
     func portraitURL(for pokemonID: Int) -> URL? {
         let idString = String(format: "%04d", pokemonID)
-        return Bundle.main.url(
-            forResource: idString,
-            withExtension: "png",
-            subdirectory: "Portraits"
-        )
+        // Portraits 서브디렉토리 우선, 번들 루트 폴백 (fileSystemSynchronizedGroups가 평탄화할 수 있음)
+        if let url = Bundle.main.url(forResource: idString, withExtension: "png", subdirectory: "Portraits") {
+            return url
+        }
+        return Bundle.main.url(forResource: idString, withExtension: "png")
     }
 }
