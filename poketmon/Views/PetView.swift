@@ -274,6 +274,7 @@ final class PetView: NSView {
     }
 
     @objc private func menuOpenSettings() {
+        print("[PetView] menuOpenSettings() 호출됨")
         SettingsWindowController.shared.open()
     }
 
