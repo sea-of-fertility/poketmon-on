@@ -148,10 +148,10 @@ final class PetView: NSView {
         mouseDownLocation = globalLocation
 
         if event.clickCount == 2 {
-            // 더블클릭: 지연된 좌클릭 취소 + 선택기 열기 (Phase 6에서 구현)
+            // 더블클릭: 지연된 좌클릭 취소 + 선택기 열기
             pendingClickAction?.cancel()
             pendingClickAction = nil
-            print("[Phase 6] 포켓몬 선택기 열기")
+            PokemonSelectorWindowController.shared.open()
             return
         }
 
@@ -262,7 +262,7 @@ final class PetView: NSView {
     // MARK: - 컨텍스트 메뉴 액션
 
     @objc private func menuChangePokemon() {
-        // Phase 6에서 선택기 윈도우 열기
+        PokemonSelectorWindowController.shared.open()
     }
 
     @objc private func menuOpenSettings() {

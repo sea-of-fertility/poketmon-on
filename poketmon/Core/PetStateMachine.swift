@@ -191,6 +191,14 @@ final class PetStateMachine {
         }
     }
 
+    /// 상태를 Idle로 강제 리셋 (포켓몬 교체 시 — 타이머 재설정)
+    func resetToIdle() {
+        currentState = .idle
+        stateEnteredAt = Date()
+        transitionTime = Double.random(in: idleToWalkRange)
+        targetPoint = nil
+    }
+
     // MARK: - 이동 로직
 
     /// 목표점을 향해 이동 + 경계 반사

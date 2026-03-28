@@ -54,6 +54,14 @@ final class PetManager {
         )
     }
 
+    /// 포켓몬 교체 (현재 위치 유지, 선택기에서 호출)
+    func changePokemon(to id: Int) {
+        guard id != currentPokemonID else { return }
+        currentPokemonID = id
+        spriteAnimator.load(pokemonID: id)
+        stateMachine.resetToIdle()
+    }
+
     // MARK: - 게임 루프 연결
 
     private func setupGameLoop() {
