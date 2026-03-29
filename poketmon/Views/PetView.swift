@@ -29,10 +29,9 @@ final class PetView: NSView {
     /// 드래그 판정 임계값 (px) — 미세한 손떨림으로 드래그 오작동 방지
     private let dragThreshold: CGFloat = 3.0
 
-    /// 스프라이트 배율 — 원본 크기 × 이 값으로 렌더링 (설정 배율 반영)
+    /// 스프라이트 배율 — PetManager에서 통합 관리
     private var spriteScale: CGFloat {
-        let baseScale = ScreenGeometry.shared.primaryScreenHeight / 450.0
-        return baseScale * PetManager.shared.settingsManager.spriteScaleMultiplier
+        PetManager.shared.spriteScale
     }
 
     /// 포켓몬 스프라이트 영역 (글로벌 좌표 → 이 윈도우의 로컬 좌표 변환)
@@ -222,23 +221,23 @@ final class PetView: NSView {
         }
 
         // 글로벌 좌표로 포켓몬 위치 계산
-        var newPos = CGPoint(
+        let newPos = CGPoint(
             x: globalLocation.x + dragOffset.x,
             y: globalLocation.y + dragOffset.y
         )
 
         // 스프라이트가 화면 밖으로 나가지 않도록 clamp
-        let animator = PetManager.shared.spriteAnimator
-        let scale = spriteScale
+        let pet = PetManager.shared
+        let scale = pet.spriteScale
+        let animator = pet.spriteAnimator
         let halfW = animator.currentFrameSize.width * scale / 2
-        let walkH = animator.walkFrameSize.height * scale
         let h = animator.currentFrameSize.height * scale
-        let bounds = ScreenGeometry.shared.unionFrame
+        let walkHalfH = animator.walkFrameSize.height * scale / 2
 
-        newPos.x = min(max(newPos.x, bounds.minX + halfW), bounds.maxX - halfW)
-        newPos.y = min(max(newPos.y, bounds.minY + walkH / 2), bounds.maxY - h + walkH / 2)
+        let (clamped, _) = ScreenGeometry.shared.clampSpritePosition(
+            newPos, halfWidth: halfW, height: h, walkHalfHeight: walkHalfH)
 
-        PetManager.shared.stateMachine.position = newPos
+        pet.stateMachine.position = clamped
     }
 
     override func mouseUp(with event: NSEvent) {

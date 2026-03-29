@@ -106,6 +106,32 @@ final class ScreenGeometry {
         return bestPoint
     }
 
+    /// 스프라이트가 화면 밖으로 나가지 않도록 위치를 union frame 내로 clamp
+    /// position: 스프라이트 중심, halfWidth: 너비/2, height: 전체 높이, walkHalfHeight: walk 높이/2 (발 기준)
+    func clampSpritePosition(_ position: CGPoint, halfWidth: CGFloat, height: CGFloat, walkHalfHeight: CGFloat) -> (position: CGPoint, bounced: Bool) {
+        let bounds = unionFrame
+        var pos = position
+        var bounced = false
+
+        if pos.x < bounds.minX + halfWidth {
+            pos.x = bounds.minX + halfWidth
+            bounced = true
+        } else if pos.x > bounds.maxX - halfWidth {
+            pos.x = bounds.maxX - halfWidth
+            bounced = true
+        }
+
+        if pos.y < bounds.minY + walkHalfHeight {
+            pos.y = bounds.minY + walkHalfHeight
+            bounced = true
+        } else if pos.y > bounds.maxY - height + walkHalfHeight {
+            pos.y = bounds.maxY - height + walkHalfHeight
+            bounced = true
+        }
+
+        return (pos, bounced)
+    }
+
     /// 실제 모니터 위의 랜덤 목표점 생성
     func randomTarget(margin: CGFloat = 40) -> CGPoint {
         let frames = activeScreenFrames

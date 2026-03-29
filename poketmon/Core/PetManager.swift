@@ -29,6 +29,12 @@ final class PetManager {
     /// 현재 포켓몬 ID
     private(set) var currentPokemonID: Int = 25
 
+    /// 스프라이트 배율 (화면 높이 / 450 × 사용자 배율)
+    var spriteScale: CGFloat {
+        let baseScale = ScreenGeometry.shared.primaryScreenHeight / 450.0
+        return baseScale * settingsManager.spriteScaleMultiplier
+    }
+
     /// 일시정지 여부
     private(set) var isPaused = false
 
