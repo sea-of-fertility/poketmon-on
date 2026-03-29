@@ -234,36 +234,24 @@ final class PetStateMachine {
         currentDirection = Direction.from(dx: moveX, dy: moveY)
 
         // 스프라이트 크기 기반 경계 반사 — 몸이 화면 밖으로 나가지 않도록
-        let animator = PetManager.shared.spriteAnimator
-        let geo = ScreenGeometry.shared
-        let scale = geo.primaryScreenHeight / 450.0 * PetManager.shared.settingsManager.spriteScaleMultiplier
+        let pet = PetManager.shared
+        let scale = pet.spriteScale
+        let animator = pet.spriteAnimator
         let halfW = animator.currentFrameSize.width * scale / 2
-        let walkH = animator.walkFrameSize.height * scale
         let h = animator.currentFrameSize.height * scale
-        var bounced = false
+        let walkHalfH = animator.walkFrameSize.height * scale / 2
 
-        if position.x < screenBounds.minX + halfW {
-            position.x = screenBounds.minX + halfW
-            bounced = true
-        } else if position.x > screenBounds.maxX - halfW {
-            position.x = screenBounds.maxX - halfW
-            bounced = true
-        }
-
-        if position.y < screenBounds.minY + walkH / 2 {
-            position.y = screenBounds.minY + walkH / 2
-            bounced = true
-        } else if position.y > screenBounds.maxY - h + walkH / 2 {
-            position.y = screenBounds.maxY - h + walkH / 2
-            bounced = true
-        }
+        let geo = ScreenGeometry.shared
+        var (clampedPos, bounced) = geo.clampSpritePosition(
+            position, halfWidth: halfW, height: h, walkHalfHeight: walkHalfH)
 
         // dead zone 보정 — 실제 모니터 밖(빈 영역)에 빠지면 가장 가까운 모니터로 이동
-        if !geo.isOnScreen(position) {
-            let clampMargin = max(halfW, walkH / 2)
-            position = geo.clampToNearestScreen(position, margin: clampMargin)
+        if !geo.isOnScreen(clampedPos) {
+            clampedPos = geo.clampToNearestScreen(clampedPos, margin: max(halfW, walkHalfH))
             bounced = true
         }
+
+        position = clampedPos
 
         if bounced {
             targetPoint = geo.randomTarget(margin: 40)
