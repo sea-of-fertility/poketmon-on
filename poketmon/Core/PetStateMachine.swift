@@ -233,31 +233,35 @@ final class PetStateMachine {
         // 방향 갱신
         currentDirection = Direction.from(dx: moveX, dy: moveY)
 
-        // union 외곽 경계 반사
-        let margin: CGFloat = 20
+        // 스프라이트 크기 기반 경계 반사 — 몸이 화면 밖으로 나가지 않도록
+        let animator = PetManager.shared.spriteAnimator
+        let geo = ScreenGeometry.shared
+        let scale = geo.primaryScreenHeight / 450.0 * PetManager.shared.settingsManager.spriteScaleMultiplier
+        let halfW = animator.currentFrameSize.width * scale / 2
+        let walkH = animator.walkFrameSize.height * scale
+        let h = animator.currentFrameSize.height * scale
         var bounced = false
 
-        if position.x < screenBounds.minX + margin {
-            position.x = screenBounds.minX + margin
+        if position.x < screenBounds.minX + halfW {
+            position.x = screenBounds.minX + halfW
             bounced = true
-        } else if position.x > screenBounds.maxX - margin {
-            position.x = screenBounds.maxX - margin
+        } else if position.x > screenBounds.maxX - halfW {
+            position.x = screenBounds.maxX - halfW
             bounced = true
         }
 
-        if position.y < screenBounds.minY + margin {
-            position.y = screenBounds.minY + margin
+        if position.y < screenBounds.minY + walkH / 2 {
+            position.y = screenBounds.minY + walkH / 2
             bounced = true
-        } else if position.y > screenBounds.maxY - margin {
-            position.y = screenBounds.maxY - margin
+        } else if position.y > screenBounds.maxY - h + walkH / 2 {
+            position.y = screenBounds.maxY - h + walkH / 2
             bounced = true
         }
 
         // dead zone 보정 — 실제 모니터 밖(빈 영역)에 빠지면 가장 가까운 모니터로 이동
-        // margin 없이 판정해야 모니터 경계를 자유롭게 넘나들 수 있음
-        let geo = ScreenGeometry.shared
         if !geo.isOnScreen(position) {
-            position = geo.clampToNearestScreen(position, margin: margin)
+            let clampMargin = max(halfW, walkH / 2)
+            position = geo.clampToNearestScreen(position, margin: clampMargin)
             bounced = true
         }
 
