@@ -42,23 +42,8 @@ final class PetStateMachine {
         Date().timeIntervalSince(stateEnteredAt)
     }
 
-    // MARK: - 전환 타이밍 (Phase 7에서 SettingsManager로 동적 교체 예정)
-
-    /// Idle → Walk 전환 시간 범위 (초)
-    var idleToWalkRange: ClosedRange<Double> = 2.0...5.0
-
-    /// Walk → Idle 전환 시간 범위 (초)
-    var walkToIdleRange: ClosedRange<Double> = 3.0...10.0
-
     /// Run 지속 시간 (초)
     var runDuration: Double = 10.0
-
-    /// Idle → Sleep 자동 전환 시간 (초)
-    var sleepTimeout: Double = 180.0
-
-    /// 이동 속도 (px/frame)
-    var walkSpeed: CGFloat = 2.0
-    var runSpeed: CGFloat = 4.0
 
     // MARK: - 내부 상태
 
@@ -79,12 +64,13 @@ final class PetStateMachine {
         currentState = state
         stateEnteredAt = Date()
 
+        let settings = SettingsManager.shared
         switch state {
         case .idle:
-            transitionTime = Double.random(in: idleToWalkRange)
+            transitionTime = Double.random(in: settings.idleToWalkRange)
             // 목표점 유지 — 여러 Walk 사이클에 걸쳐 같은 방향으로 이동
         case .walk:
-            transitionTime = Double.random(in: walkToIdleRange)
+            transitionTime = Double.random(in: settings.walkToIdleRange)
         case .run:
             transitionTime = runDuration
         case .sleep, .reaction, .dragged:
@@ -101,7 +87,7 @@ final class PetStateMachine {
         switch currentState {
         case .idle:
             // Idle → Sleep (장시간 대기)
-            if elapsed >= sleepTimeout {
+            if elapsed >= SettingsManager.shared.sleepTimeoutSeconds {
                 transition(to: .sleep)
                 return .sleep
             }
@@ -124,7 +110,7 @@ final class PetStateMachine {
                 return .idle
             }
             // 목표점 도달 시 새 목표점
-            moveTowardTarget(speed: walkSpeed, screenBounds: screenBounds)
+            moveTowardTarget(speed: SettingsManager.shared.walkSpeedValue, screenBounds: screenBounds)
             return nil
 
         case .run:
@@ -135,7 +121,7 @@ final class PetStateMachine {
                 updateDirection()
                 return .walk
             }
-            moveTowardTarget(speed: runSpeed, screenBounds: screenBounds)
+            moveTowardTarget(speed: SettingsManager.shared.runSpeedValue, screenBounds: screenBounds)
             return nil
 
         case .sleep, .reaction, .dragged:
@@ -199,7 +185,7 @@ final class PetStateMachine {
     func resetToIdle() {
         currentState = .idle
         stateEnteredAt = Date()
-        transitionTime = Double.random(in: idleToWalkRange)
+        transitionTime = Double.random(in: SettingsManager.shared.idleToWalkRange)
         targetPoint = nil
     }
 

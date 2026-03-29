@@ -40,6 +40,8 @@ enum WindowLevelOption: Int, CaseIterable {
 @Observable
 final class SettingsManager {
 
+    static let shared = SettingsManager()
+
     // MARK: - UserDefaults 키
 
     private enum Key {
@@ -119,7 +121,6 @@ final class SettingsManager {
         didSet {
             guard !isLoading else { return }
             save(movementSpeed, forKey: Key.movementSpeed)
-            applyBehaviorSettings()
         }
     }
 
@@ -128,7 +129,6 @@ final class SettingsManager {
         didSet {
             guard !isLoading else { return }
             save(activityFrequency, forKey: Key.activityFrequency)
-            applyBehaviorSettings()
         }
     }
 
@@ -137,7 +137,6 @@ final class SettingsManager {
         didSet {
             guard !isLoading else { return }
             save(sleepTimeout, forKey: Key.sleepTimeout)
-            applyBehaviorSettings()
         }
     }
 
@@ -327,17 +326,6 @@ final class SettingsManager {
     }
 
     // MARK: - 실시간 반영
-
-    /// PetStateMachine에 행동 설정 적용
-    /// - Parameter stateMachine: 대상 (nil이면 PetManager.shared.stateMachine)
-    func applyBehaviorSettings(to stateMachine: PetStateMachine? = nil) {
-        let sm = stateMachine ?? PetManager.shared.stateMachine
-        sm.walkSpeed = walkSpeedValue
-        sm.runSpeed = runSpeedValue
-        sm.idleToWalkRange = idleToWalkRange
-        sm.walkToIdleRange = walkToIdleRange
-        sm.sleepTimeout = sleepTimeoutSeconds
-    }
 
     /// 모든 오버레이 윈도우에 투명도 적용
     func applyOpacity() {

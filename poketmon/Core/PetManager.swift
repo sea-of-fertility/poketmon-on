@@ -22,7 +22,7 @@ final class PetManager {
     let stateMachine = PetStateMachine()
     let gameLoop = GameLoop()
     let pokemonDataManager = PokemonDataManager()
-    let settingsManager = SettingsManager()
+    let settingsManager = SettingsManager.shared
 
     // MARK: - 상태
 
@@ -47,7 +47,6 @@ final class PetManager {
     // MARK: - 초기화
 
     private init() {
-        settingsManager.applyBehaviorSettings(to: stateMachine)
         setupGameLoop()
 
         // 저장된 포켓몬 로드 (없으면 기본 25 = 피카츄)
