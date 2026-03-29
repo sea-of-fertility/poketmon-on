@@ -53,6 +53,7 @@ final class SettingsManager {
         static let currentPokemonID = "com.poketmon.settings.currentPokemonID"
         static let lastPositionX = "com.poketmon.settings.lastPositionX"
         static let lastPositionY = "com.poketmon.settings.lastPositionY"
+        static let restrictedMonitor = "com.poketmon.settings.restrictedMonitor"
     }
 
     // MARK: - 기본값
