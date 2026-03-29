@@ -221,11 +221,24 @@ final class PetView: NSView {
             PetManager.shared.startDrag()
         }
 
-        // 글로벌 좌표로 포켓몬 위치 업데이트 (모니터 간 드래그 대응)
-        PetManager.shared.stateMachine.position = CGPoint(
+        // 글로벌 좌표로 포켓몬 위치 계산
+        var newPos = CGPoint(
             x: globalLocation.x + dragOffset.x,
             y: globalLocation.y + dragOffset.y
         )
+
+        // 스프라이트가 화면 밖으로 나가지 않도록 clamp
+        let animator = PetManager.shared.spriteAnimator
+        let scale = spriteScale
+        let halfW = animator.currentFrameSize.width * scale / 2
+        let walkH = animator.walkFrameSize.height * scale
+        let h = animator.currentFrameSize.height * scale
+        let bounds = ScreenGeometry.shared.unionFrame
+
+        newPos.x = min(max(newPos.x, bounds.minX + halfW), bounds.maxX - halfW)
+        newPos.y = min(max(newPos.y, bounds.minY + walkH / 2), bounds.maxY - h + walkH / 2)
+
+        PetManager.shared.stateMachine.position = newPos
     }
 
     override func mouseUp(with event: NSEvent) {
