@@ -20,6 +20,8 @@ PMDCollab SpriteCollab의 8방향 스프라이트 시트를 사용합니다.
 - **언어**: Swift
 - **외부 의존성 없음**
 
+Xcode에서 `poketmon.xcodeproj`를 열고 빌드(⌘B) 후 실행(⌘R)하면 됩니다.
+
 ## 프로젝트 구조
 
 ```
@@ -46,6 +48,18 @@ PetManager.shared (@Observable 싱글턴)
   └─ pokemonDataManager  649종 포켓몬 목록
 ```
 
-## 스프라이트 출처
+## 크레딧 및 라이선스
 
-[PMDCollab SpriteCollab](https://github.com/PMDCollab/SpriteCollab) - 8방향 스프라이트 시트
+### 스프라이트
+
+본 프로젝트의 포켓몬 스프라이트 및 초상화 이미지는 [PMDCollab SpriteCollab](https://github.com/PMDCollab/SpriteCollab) 프로젝트에서 제공받았습니다.
+
+- **라이선스**: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) (Creative Commons 저작자표시-비상업적 4.0 국제)
+- **제작자**: PMDCollab 커뮤니티 기여자 ([전체 크레딧 목록](https://github.com/PMDCollab/SpriteCollab/blob/master/credit_names.txt))
+
+이 스프라이트는 비상업적 목적으로만 사용할 수 있습니다.
+
+### 포켓몬
+
+포켓몬(Pokémon)은 Nintendo / Creatures Inc. / GAME FREAK inc.의 상표 및 저작물입니다.
+본 프로젝트는 팬 프로젝트이며, 상업적 목적이 아닌 개인 용도로 제작되었습니다.
