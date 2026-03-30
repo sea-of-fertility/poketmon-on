@@ -172,13 +172,17 @@ struct PokemonSelectorView: View {
 
     private let gridColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 5)
 
-    /// 필터 조합 결과 (검색어 있으면 전체 검색, 없으면 세대 AND 타입)
+    /// 필터 조합 결과 (세대/타입 필터 적용 후 검색어로 추가 필터)
     private var filteredPokemon: [PokemonData] {
+        let base = dataManager.pokemon(gen: selectedGen, types: activeTypes)
         let query = searchText.trimmingCharacters(in: .whitespaces)
-        if !query.isEmpty {
-            return dataManager.search(query: query)
+        guard !query.isEmpty else { return base }
+        let q = query.lowercased()
+        return base.filter {
+            $0.name.lowercased().contains(q)
+            || String($0.id).contains(q)
+            || $0.displayNumber.contains(q)
         }
-        return dataManager.pokemon(gen: selectedGen, types: activeTypes)
     }
 
     var body: some View {
@@ -223,8 +227,6 @@ struct PokemonSelectorView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
-        .opacity(searchText.isEmpty ? 1 : 0.4)
-        .allowsHitTesting(searchText.isEmpty)
     }
 
     private func genTabButton(gen: Int, count: Int) -> some View {
@@ -265,8 +267,6 @@ struct PokemonSelectorView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
-        .opacity(searchText.isEmpty ? 1 : 0.4)
-        .allowsHitTesting(searchText.isEmpty)
     }
 
     private func chipRow(types: [String]) -> some View {
