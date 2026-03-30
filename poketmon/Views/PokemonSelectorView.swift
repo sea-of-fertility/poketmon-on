@@ -74,6 +74,7 @@ final class PokemonSelectorWindowController: NSObject, NSWindowDelegate {
     // MARK: - NSWindowDelegate
 
     func windowWillClose(_ notification: Notification) {
+        ThumbnailCache.shared.clearAll()
         panel = nil
     }
 }
@@ -90,6 +91,12 @@ private final class ThumbnailCache: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return cache[id]
+    }
+
+    func clearAll() {
+        lock.lock()
+        cache.removeAll()
+        lock.unlock()
     }
 
     /// 포트레이트 → 스프라이트 첫 프레임 순서로 로드 (백그라운드 스레드에서 호출)
