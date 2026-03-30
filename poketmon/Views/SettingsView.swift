@@ -306,7 +306,7 @@ private struct SettingsSliderRow: View {
                 .frame(width: 70, alignment: .leading)
 
             VStack(spacing: 2) {
-                Slider(value: $value, in: range, step: step)
+                Slider(value: $value, in: range)
                 HStack {
                     Text(minLabel)
                         .font(.system(size: 10))
