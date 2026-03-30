@@ -106,10 +106,33 @@ final class ScreenGeometry {
         return bestPoint
     }
 
-    /// 스프라이트가 화면 밖으로 나가지 않도록 위치를 union frame 내로 clamp
+    /// 포켓몬이 현재 위치한 개별 모니터 frame 반환, 없으면 가장 가까운 모니터
+    /// useAllScreens: true이면 제한 모니터 설정 무시 (드래그 등 사용자 직접 조작용)
+    private func screenFrame(for point: CGPoint, useAllScreens: Bool = false) -> CGRect {
+        let frames = useAllScreens ? screenFrames : activeScreenFrames
+        if let screen = frames.first(where: { $0.contains(point) }) {
+            return screen
+        }
+        // dead zone — 가장 가까운 모니터 찾기
+        var bestFrame = frames.first ?? unionFrame
+        var bestDist = CGFloat.greatestFiniteMagnitude
+        for frame in frames {
+            let cx = min(max(point.x, frame.minX), frame.maxX)
+            let cy = min(max(point.y, frame.minY), frame.maxY)
+            let dist = (cx - point.x) * (cx - point.x) + (cy - point.y) * (cy - point.y)
+            if dist < bestDist {
+                bestDist = dist
+                bestFrame = frame
+            }
+        }
+        return bestFrame
+    }
+
+    /// 스프라이트가 화면 밖으로 나가지 않도록 개별 모니터 기준으로 clamp
     /// position: 스프라이트 중심, halfWidth: 너비/2, height: 전체 높이, walkHalfHeight: walk 높이/2 (발 기준)
-    func clampSpritePosition(_ position: CGPoint, halfWidth: CGFloat, height: CGFloat, walkHalfHeight: CGFloat) -> (position: CGPoint, bounced: Bool) {
-        let bounds = unionFrame
+    /// ignoreRestriction: true이면 모니터 제한 무시 (드래그용)
+    func clampSpritePosition(_ position: CGPoint, halfWidth: CGFloat, height: CGFloat, walkHalfHeight: CGFloat, ignoreRestriction: Bool = false) -> (position: CGPoint, bounced: Bool) {
+        let bounds = screenFrame(for: position, useAllScreens: ignoreRestriction)
         var pos = position
         var bounced = false
 

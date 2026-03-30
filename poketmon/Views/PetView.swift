@@ -235,7 +235,7 @@ final class PetView: NSView {
         let walkHalfH = animator.walkFrameSize.height * scale / 2
 
         let (clamped, _) = ScreenGeometry.shared.clampSpritePosition(
-            newPos, halfWidth: halfW, height: h, walkHalfHeight: walkHalfH)
+            newPos, halfWidth: halfW, height: h, walkHalfHeight: walkHalfH, ignoreRestriction: true)
 
         pet.stateMachine.position = clamped
     }
