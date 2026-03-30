@@ -56,6 +56,9 @@ final class PetStateMachine {
     /// 드래그 진입 전 상태 (드래그 종료 시 복원용)
     private var stateBeforeDrag: PetState = .idle
 
+    /// 마지막 사용자 상호작용 시각 (수면 타이머 기준 — Idle↔Walk 자율 순환과 무관)
+    private var lastInteractionAt: Date = Date()
+
     // MARK: - 상태 전환
 
     /// 상태를 변경하고 진입 시각 갱신
@@ -86,8 +89,8 @@ final class PetStateMachine {
 
         switch currentState {
         case .idle:
-            // Idle → Sleep (장시간 대기)
-            if elapsed >= SettingsManager.shared.sleepTimeoutSeconds {
+            // Idle → Sleep (장시간 비활동)
+            if Date().timeIntervalSince(lastInteractionAt) >= SettingsManager.shared.sleepTimeoutSeconds {
                 transition(to: .sleep)
                 return .sleep
             }
@@ -133,6 +136,7 @@ final class PetStateMachine {
 
     /// 클릭 → Reaction (Sleep이면 깨우기)
     func react() {
+        lastInteractionAt = Date()
         if currentState == .sleep {
             transition(to: .idle)
         } else if currentState != .dragged && currentState != .reaction {
@@ -149,6 +153,7 @@ final class PetStateMachine {
 
     /// 깨우기 (Sleep → Idle)
     func wake() {
+        lastInteractionAt = Date()
         if currentState == .sleep {
             transition(to: .idle)
         }
@@ -156,6 +161,7 @@ final class PetStateMachine {
 
     /// 강제 Run (10초 후 Walk 복귀)
     func run() {
+        lastInteractionAt = Date()
         if currentState != .dragged {
             transition(to: .run)
             targetPoint = targetPoint ?? ScreenGeometry.shared.randomTarget(margin: 40)
@@ -165,6 +171,7 @@ final class PetStateMachine {
 
     /// 드래그 시작 — 현재 상태를 기억
     func startDrag() {
+        lastInteractionAt = Date()
         stateBeforeDrag = currentState
         transition(to: .dragged)
     }
@@ -183,6 +190,7 @@ final class PetStateMachine {
 
     /// 상태를 Idle로 강제 리셋 (포켓몬 교체 시 — 타이머 재설정)
     func resetToIdle() {
+        lastInteractionAt = Date()
         currentState = .idle
         stateEnteredAt = Date()
         transitionTime = Double.random(in: SettingsManager.shared.idleToWalkRange)
